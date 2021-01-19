@@ -32,7 +32,7 @@ class ServoThread(QThread):
         else:
             sleep_time = self.difference - self.instructionServo
 
-        sleep_time = round(0.10 * sleep_time, 2)
+        sleep_time = round(0.15 * sleep_time, 2)
         pwm.ChangeDutyCycle(position)        
         sleep(sleep_time)
         print("FINAL SLEEP " + str(sleep_time))
@@ -40,3 +40,4 @@ class ServoThread(QThread):
         pwm.stop()
         GPIO.cleanup()
         self.difference = self.instructionServo
+        self.exit()

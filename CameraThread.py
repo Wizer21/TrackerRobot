@@ -1,9 +1,7 @@
 from PyQt5.QtWidgets import*
 from PyQt5.QtGui import*
 from PyQt5.QtCore import*
-from picamera import PiCamera
-from io import BytesIO
-from picamera.array import PiRGBArray
+import cv2
 
 class Communication(QObject):
     cameraImages = pyqtSignal(QImage)
@@ -17,18 +15,25 @@ class CameraThread(QThread):
     def run(self):
         keep = True        
 
-        with PiCamera() as camera:
-            camera.resolution = (384, 216)
-            camera.shutter_speed = 0
+        test = 0
+        my_width = 1000
+        my_height = 500
+        cap = cv2.VideoCapture(0)
 
-            with PiRGBArray(camera) as rawCapture:
-                while keep:
-                    camera.capture(rawCapture, format = "rgb")
+        #cap.set(cv2.CAP_PROP_FRAME_WIDTH, my_width)
+        #cap.set(cv2.CAP_PROP_FRAME_HEIGHT, my_height)
+        #cap.set(10, 4)  # SET BRIGHNESS TO 5
+        #cap.set(12, 20)  # SET SATURATION TO 10
 
-                    image = rawCapture.array
-                    rawCapture.truncate(0)
-                    h, w, ch = image.shape
-                    bytesPerLine = ch*w
-                    qt_image = QImage(image, w, h, bytesPerLine, QImage.Format_RGB888)
+        while keep:
+            test += 1
+            print(str(test))
+            ret, frame = cap.read()
+            if ret:
+                cv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                height, width, channel = cv_image.shape
+                bytesPerLine = 3 * width
+                qImg1 = QImage(cv_image.data, width, height, bytesPerLine, QImage.Format_RGB888).rgbSwapped()
 
-                    self.messager.cameraImages.emit(qt_image)
+
+                self.messager.cameraImages.emit(qImg1)

@@ -35,11 +35,12 @@ class Main_gui(QMainWindow):
         self.sliderServo.valueChanged.connect(self.updateServoPosOnSlider)
 
     def updateServoPosOnSlider(self, val):
-        self.thread.setUpInstructions(val)
-        self.thread.start()
+        self.thread_servos.setUpInstructions(val)
+        self.thread_servos.start()
 
     def run_camera(self):
         self.thread_camera.start()
 
-    def display_camera(self, img):
+    def display_camera(self, img):     
+
         self.labelDisplayCamera.setPixmap(QPixmap.fromImage(img))
