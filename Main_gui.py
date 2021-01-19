@@ -3,34 +3,70 @@ from PyQt5.QtGui import*
 from PyQt5.QtCore import*
 from ServoThread import*
 from CameraThread import*
+from imagePicker import*
+from tracker import *
+from shape import*
+from numpy import *
 
 class Main_gui(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
         self.thread_servos = ServoThread()
         self.thread_camera = CameraThread()
+        self.camera_image = QImage()
+        self.range_color = 20
+        self.tracking_on = False
+        self.shape = Dynamic_shape()
+        self.midColor = (0, 0, 0)
 
         self.widgetMain = QWidget(self)
         self.layoutMain = QGridLayout(self)
-        self.labelTitle = QLabel("Tracker Robot !", self)
+        self.viewDisplayCamera = imagePicker(self)
+        self.sceneDisplayCamera = QGraphicsScene(self)
+
+        self.layoutPanel = QGridLayout(self)
+
+        self.layoutColor = QGridLayout(self)
+        self.labelColorTitle = QLabel("Color", self)
+        self.labelColorHover = QLabel("hover", self)
+        self.labelColorMIN= QLabel("min", self)
+        self.labelColorMID = QLabel("mid", self)
+        self.labelColorMAX = QLabel("max", self)
+        self.sliderColorRange = QSlider(self)
+
         self.sliderServo = QSlider(self)
-        self.labelDisplayCamera = QLabel(self)
 
         self.build()
         self.run_camera()
 
 
     def build(self):
+        # BUILD
         self.setCentralWidget(self.widgetMain)
         self.widgetMain.setLayout(self.layoutMain)
-        self.layoutMain.addWidget(self.labelTitle, 0, 0)
-        self.layoutMain.addWidget(self.sliderServo, 1, 0)
-        self.layoutMain.addWidget(self.labelDisplayCamera, 0, 1, 2, 1)
+        self.layoutMain.addWidget(self.viewDisplayCamera, 0, 1)
 
+        self.layoutMain.addLayout(self.layoutPanel, 0, 0)
+        self.layoutPanel.addLayout(self.layoutColor, 0, 0)
+        
+        self.layoutColor.addWidget(self.labelColorTitle, 0, 0, 1, 3)
+        self.layoutColor.addWidget(self.labelColorHover, 1, 0, 1, 3)
+        self.layoutColor.addWidget(self.labelColorMIN, 2, 0)
+        self.layoutColor.addWidget(self.labelColorMID, 2, 1)
+        self.layoutColor.addWidget(self.labelColorMAX, 2, 2)
+        self.layoutColor.addWidget(self.sliderColorRange, 3, 0, 1, 3)
+
+        # PARAMETER
         self.sliderServo.setPageStep(1)
         self.sliderServo.setRange(4, 48)
         self.sliderServo.setOrientation(Qt.Horizontal)
-
+        self.sliderColorRange.setOrientation(Qt.Horizontal)
+        self.layoutPanel.setAlignment(Qt.AlignTop)
+        self.viewDisplayCamera.setScene(self.sceneDisplayCamera)
+        
+        self.viewDisplayCamera.messager.pixel_selected.connect(self.color_clicked)
+        self.viewDisplayCamera.messager.transfert_position.connect(self.color_hover)
+        self.viewDisplayCamera.messager.selecter_leaved.connect(self.color_leaved)
         self.thread_camera.messager.cameraImages.connect(self.display_camera)
         self.sliderServo.valueChanged.connect(self.updateServoPosOnSlider)
 
@@ -38,9 +74,87 @@ class Main_gui(QMainWindow):
         self.thread_servos.setUpInstructions(val)
         self.thread_servos.start()
 
+    # START CAMERA THREAD
     def run_camera(self):
         self.thread_camera.start()
 
-    def display_camera(self, img):     
+    # SET QIMAGE FROM CAMERA THREAD
+    def display_camera(self, img):  
+        self.camera_image = img
 
-        self.labelDisplayCamera.setPixmap(QPixmap.fromImage(img))
+        self.sceneDisplayCamera.clear() 
+
+        if self.tracking_on:
+            data = cam_tracker(my_map)
+            self.shape.build(data[0], data[1], data[2], data[3], data[4])
+            self.draw_shape()
+        
+        self.sceneDisplayCamera.addPixmap(QPixmap.fromImage(img))
+        print("loop")
+
+    # COLOR PICKER CONNECTION
+    def color_clicked(self, x, y):
+        pix = QPixmap(self.labelColorMID.size())
+        pixel = self.camera_image.pixelColor(x, y)
+        pix.fill(QColor(pixel.red(), pixel.green(), pixel.blue()))        
+
+        self.labelColorMID.setPixmap(pix)
+        self.calculate_and_display_color_range((pixel.red(), pixel.green(), pixel.blue()))
+
+        self.tracking_on = True
+
+    # COLOR PICKER CONNECTION
+    def color_hover(self, x, y):
+        pix = QPixmap(self.labelColorMID.size())
+        pixel = self.camera_image.pixelColor(x, y)
+        pix.fill(QColor(pixel.red(), pixel.green(), pixel.blue()))      
+        new_pos(x, y, (pixel.red(), pixel.green(), pixel.blue()), self.range_color)  
+
+        self.labelColorHover.setPixmap(pix)
+
+    # COLOR PICKER CONNECTION
+    def color_leaved(self): 
+        self.labelColorHover.clear()
+
+    def calculate_and_display_color_range(RGB):
+        self.midColor = RGB
+
+        pix = QPixmap(self.labelColorMIN.size())
+
+        # SET MIN COLOR
+        color = [RGB[0] - self.range_color, RGB[1] - self.range_color, RGB[2] - self.range_color]
+        for it in color:
+            if it < 0:
+                it = 0
+
+        pix.fill(QColor(color[0], color[1], color[2]))        
+        self.labelColorMIN.setPixmap(pix)
+
+        # SET MAX COLOR
+        color = [RGB[0] - self.range_color, RGB[1] - self.range_color, RGB[2] - self.range_color]
+        for it in color:
+            if it > 255:
+                it = 255
+
+        pix.fill(QColor(color[0], color[1], color[2]))   
+        self.labelColorMIN.setPixmap(pix)
+
+    def draw_shape(self):
+        color_points = QPen("#ffffff")
+        color_points.setWidth(self.pen_size)
+        color_square = QPen("#ff0048")
+        color_square.setWidth(self.pen_size)
+        color_middle = QPen("#0084ff")
+        color_middle.setWidth(self.pen_size)
+        middle_width = 10
+
+        points = self.shape.points
+        for i in range(len(self.shape.points)):
+            self.sceneDisplayCamera.addLine(points[i][0] - self.pen_size, points[i][1], points[i][0] + self.pen_size, points[i][1], color_points)
+            self.sceneDisplayCamera.addLine(points[i][0], points[i][1] - self.pen_size, points[i][0], points[i][1] + self.pen_size, color_points)
+
+        self.sceneDisplayCamera.addRect(QRect(self.shape.top_left[0], self.shape.top_left[1], self.shape.width, self.shape.height), color_square)
+        
+        self.sceneDisplayCamera.addLine(self.shape.center[0] - middle_width, self.shape.center[1], self.shape.center[0] + middle_width, self.shape.center[1], color_middle)
+        self.sceneDisplayCamera.addLine(self.shape.center[0], self.shape.center[1] - middle_width, self.shape.center[0], self.shape.center[1] + middle_width, color_middle)
+
