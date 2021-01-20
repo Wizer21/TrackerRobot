@@ -18,6 +18,7 @@ class Main_gui(QMainWindow):
         self.tracking_on = False
         self.shape = Dynamic_shape()
         self.midColor = (0, 0, 0)
+        self.pen_size = 3
 
         self.widgetMain = QWidget(self)
         self.layoutMain = QGridLayout(self)
@@ -38,6 +39,7 @@ class Main_gui(QMainWindow):
 
         self.build()
         self.run_camera()
+        self.resize(1000, 1000)
 
 
     def build(self):
@@ -79,18 +81,18 @@ class Main_gui(QMainWindow):
         self.thread_camera.start()
 
     # SET QIMAGE FROM CAMERA THREAD
-    def display_camera(self, img):  
+    def display_camera(self, img, ndarray):  
         self.camera_image = img
 
         self.sceneDisplayCamera.clear() 
 
+        self.sceneDisplayCamera.addPixmap(QPixmap.fromImage(img))
         if self.tracking_on:
-            data = cam_tracker(my_map)
+            data = cam_tracker(ndarray)
             self.shape.build(data[0], data[1], data[2], data[3], data[4])
             self.draw_shape()
         
-        self.sceneDisplayCamera.addPixmap(QPixmap.fromImage(img))
-        print("loop")
+    
 
     # COLOR PICKER CONNECTION
     def color_clicked(self, x, y):
@@ -99,7 +101,7 @@ class Main_gui(QMainWindow):
         pix.fill(QColor(pixel.red(), pixel.green(), pixel.blue()))        
 
         self.labelColorMID.setPixmap(pix)
-        self.calculate_and_display_color_range((pixel.red(), pixel.green(), pixel.blue()))
+        self.calculate_and_display_color_range([pixel.red(), pixel.green(), pixel.blue()])
 
         self.tracking_on = True
 
@@ -116,7 +118,7 @@ class Main_gui(QMainWindow):
     def color_leaved(self): 
         self.labelColorHover.clear()
 
-    def calculate_and_display_color_range(RGB):
+    def calculate_and_display_color_range(self, RGB):
         self.midColor = RGB
 
         pix = QPixmap(self.labelColorMIN.size())
@@ -140,11 +142,11 @@ class Main_gui(QMainWindow):
         self.labelColorMIN.setPixmap(pix)
 
     def draw_shape(self):
-        color_points = QPen("#ffffff")
+        color_points = QPen(QColor("#ffffff"))
         color_points.setWidth(self.pen_size)
-        color_square = QPen("#ff0048")
+        color_square = QPen(QColor("#ff0048"))
         color_square.setWidth(self.pen_size)
-        color_middle = QPen("#0084ff")
+        color_middle = QPen(QColor("#0084ff"))
         color_middle.setWidth(self.pen_size)
         middle_width = 10
 
@@ -152,8 +154,8 @@ class Main_gui(QMainWindow):
         for i in range(len(self.shape.points)):
             self.sceneDisplayCamera.addLine(points[i][0] - self.pen_size, points[i][1], points[i][0] + self.pen_size, points[i][1], color_points)
             self.sceneDisplayCamera.addLine(points[i][0], points[i][1] - self.pen_size, points[i][0], points[i][1] + self.pen_size, color_points)
-
-        self.sceneDisplayCamera.addRect(QRect(self.shape.top_left[0], self.shape.top_left[1], self.shape.width, self.shape.height), color_square)
+     
+        self.sceneDisplayCamera.addRect(self.shape.top_left[0], self.shape.top_left[1], self.shape.width, self.shape.height, color_square)
         
         self.sceneDisplayCamera.addLine(self.shape.center[0] - middle_width, self.shape.center[1], self.shape.center[0] + middle_width, self.shape.center[1], color_middle)
         self.sceneDisplayCamera.addLine(self.shape.center[0], self.shape.center[1] - middle_width, self.shape.center[0], self.shape.center[1] + middle_width, color_middle)

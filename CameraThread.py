@@ -5,7 +5,7 @@ import cv2
 from numpy import *
 
 class Communication(QObject):
-    cameraImages = pyqtSignal(QImage)
+    cameraImages = pyqtSignal(QImage, ndarray)
 
 class CameraThread(QThread):
     def __init__(self):
@@ -30,5 +30,4 @@ class CameraThread(QThread):
                 cv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 height, width, channel = cv_image.shape
                 bytesPerLine = 3 * width
-                cv_image.tolist() # EXTREMELY SLOW
-                self.messager.cameraImages.emit(QImage(cv_image.data, width, height, bytesPerLine, QImage.Format_RGB888).rgbSwapped())
+                self.messager.cameraImages.emit(QImage(cv_image.data, width, height, bytesPerLine, QImage.Format_RGB888).rgbSwapped(), cv_image)
