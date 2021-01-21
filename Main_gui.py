@@ -14,7 +14,7 @@ class Main_gui(QMainWindow):
         self.thread_servos = ServoThread()
         self.thread_camera = CameraThread()
         self.camera_image = QImage()
-        self.range_color = 20
+        self.range_color = 30
         self.tracking_on = False
         self.shape = Dynamic_shape()
         self.midColor = (0, 0, 0)
@@ -39,7 +39,7 @@ class Main_gui(QMainWindow):
 
         self.build()
         self.run_camera()
-        self.resize(1000, 1000)
+        self.resize(700, 700)
 
 
     def build(self):
@@ -70,11 +70,15 @@ class Main_gui(QMainWindow):
         self.viewDisplayCamera.messager.transfert_position.connect(self.color_hover)
         self.viewDisplayCamera.messager.selecter_leaved.connect(self.color_leaved)
         self.thread_camera.messager.cameraImages.connect(self.display_camera)
+        self.thread_camera.messager.cameraSize.connect(self.set_up_view)
         self.sliderServo.valueChanged.connect(self.updateServoPosOnSlider)
 
     def updateServoPosOnSlider(self, val):
         self.thread_servos.setUpInstructions(val)
         self.thread_servos.start()
+
+    def set_up_view(self, w, h):
+        self.viewDisplayCamera.setFixedSize(QSize(w, h))
 
     # START CAMERA THREAD
     def run_camera(self):
@@ -87,18 +91,20 @@ class Main_gui(QMainWindow):
         self.sceneDisplayCamera.clear() 
 
         self.sceneDisplayCamera.addPixmap(QPixmap.fromImage(img))
+
         if self.tracking_on:
-            data = cam_tracker(ndarray)
+            data = cam_tracker(ndarray)            
             self.shape.build(data[0], data[1], data[2], data[3], data[4])
             self.draw_shape()
-        
-    
+            print("adaptive color " + str(data[5]))
+            
 
     # COLOR PICKER CONNECTION
     def color_clicked(self, x, y):
         pix = QPixmap(self.labelColorMID.size())
         pixel = self.camera_image.pixelColor(x, y)
         pix.fill(QColor(pixel.red(), pixel.green(), pixel.blue()))        
+        new_pos(x, y, (pixel.red(), pixel.green(), pixel.blue()), self.range_color)  
 
         self.labelColorMID.setPixmap(pix)
         self.calculate_and_display_color_range([pixel.red(), pixel.green(), pixel.blue()])
@@ -107,12 +113,10 @@ class Main_gui(QMainWindow):
 
     # COLOR PICKER CONNECTION
     def color_hover(self, x, y):
-        pix = QPixmap(self.labelColorMID.size())
-        pixel = self.camera_image.pixelColor(x, y)
-        pix.fill(QColor(pixel.red(), pixel.green(), pixel.blue()))      
-        new_pos(x, y, (pixel.red(), pixel.green(), pixel.blue()), self.range_color)  
-
-        self.labelColorHover.setPixmap(pix)
+        # pix = QPixmap(self.labelColorMID.size())
+        # pixel = self.camera_image.pixelColor(x, y)        
+        # pix.fill(QColor(pixel.red(), pixel.green(), pixel.blue()))     
+        # self.labelColorHover.setPixmap(pix)
 
     # COLOR PICKER CONNECTION
     def color_leaved(self): 
@@ -133,13 +137,13 @@ class Main_gui(QMainWindow):
         self.labelColorMIN.setPixmap(pix)
 
         # SET MAX COLOR
-        color = [RGB[0] - self.range_color, RGB[1] - self.range_color, RGB[2] - self.range_color]
+        color = [RGB[0] + self.range_color, RGB[1] + self.range_color, RGB[2] + self.range_color]
         for it in color:
             if it > 255:
                 it = 255
 
         pix.fill(QColor(color[0], color[1], color[2]))   
-        self.labelColorMIN.setPixmap(pix)
+        self.labelColorMAX.setPixmap(pix)
 
     def draw_shape(self):
         color_points = QPen(QColor("#ffffff"))

@@ -6,7 +6,6 @@ max_rgb = (0, 0, 0)
 min_diameter = 0
 step = 4
 adaptive_color = (0, 0, 0)
-mid_rgb = (0, 0, 0)
 color_iterator = 0
 color_range = 0
 variations = []
@@ -18,14 +17,12 @@ def new_pos(x, y, new_mid_rgb, newcolor_range):
     global color_iterator
     global color_range
     global adaptive_color
-    global mid_rgb
     global min_diameter
     global variations
 
     last_x = x
     last_y = y
     color_range = newcolor_range
-    mid_rgb = new_mid_rgb
     min_diameter = step
 
     adaptive_color = new_mid_rgb
@@ -34,13 +31,15 @@ def new_pos(x, y, new_mid_rgb, newcolor_range):
     cal_colors()
 
     variations = [[0, -step],
-                 [+step, -step],
+                 #[+step, -step],
                  [+step, 0],
-                 [+step, +step],
+                 #[+step, +step],
                  [0, +step],
-                 [-step, +step],
-                 [-step, 0],
-                 [-step, -step]]
+                 #[-step, +step],
+                 [-step, 0]
+                 #[-step, -step]
+                 ]
+    
 
 
 def cam_tracker(pixel_map):
@@ -62,7 +61,9 @@ def cam_tracker(pixel_map):
     left = [last_x, last_y]
     top_left = [last_x, last_y]
 
-    positions = [top, top_right, right, bot_right, bot, bot_left, left, top_left]
+    #positions = [top, top_right, right, bot_right, bot, bot_left, left, top_left]
+    positions = [top, right, bot, left]
+
 
     track = True
     for i in range(len(positions)):
@@ -74,9 +75,9 @@ def cam_tracker(pixel_map):
                 y = 1
                 matched = False
                 while y < 10:
-                    if validate_pixel(pixel_map, positions[i][1] + (variations[i][1] * y), positions[i][0] + (variations[i][0] * y)):
-                        positions[i][0] += (variations[i][0] * y)
-                        positions[i][1] += (variations[i][1] * y)
+                    if validate_pixel(pixel_map, positions[i][1] + (int(variations[i][1] * y)), positions[i][0] + (int(variations[i][0] * y))):
+                        positions[i][0] += (int(variations[i][0] * y))
+                        positions[i][1] += (int(variations[i][1] * y))
                         y = 10
                         matched = True
                     y += 1
@@ -224,7 +225,7 @@ def define_starter(pixel_map):
                     [-step, -step],
                     [0, -step]]
 
-    for y in range(4):
+    for y in range(2):
 
         if y > 1:
             position_list = [[0, -my_range],

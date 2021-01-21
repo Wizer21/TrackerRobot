@@ -5,6 +5,7 @@ import cv2
 from numpy import *
 
 class Communication(QObject):
+    cameraSize = pyqtSignal(int, int)
     cameraImages = pyqtSignal(QImage, ndarray)
 
 class CameraThread(QThread):
@@ -18,10 +19,13 @@ class CameraThread(QThread):
         my_height = 500
         cap = cv2.VideoCapture(0)
 
-        #cap.set(cv2.CAP_PROP_FRAME_WIDTH, my_width)
-        #cap.set(cv2.CAP_PROP_FRAME_HEIGHT, my_height)
         #cap.set(10, 4)  # SET BRIGHNESS TOcameraImages 5
         #cap.set(12, 20)  # SET SATURATION TO 10
+
+        cap.set(cv2.CAP_PROP_FPS, 10)
+        print("fps: " + str(cap.get(cv2.CAP_PROP_FPS)))
+
+        self.messager.cameraSize.emit(cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
         keep = True   
         while keep:
@@ -30,4 +34,5 @@ class CameraThread(QThread):
                 cv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 height, width, channel = cv_image.shape
                 bytesPerLine = 3 * width
-                self.messager.cameraImages.emit(QImage(cv_image.data, width, height, bytesPerLine, QImage.Format_RGB888).rgbSwapped(), cv_image)
+                self.messager.cameraImages.emit(QImage(cv_image.data, width, height, bytesPerLine, QImage.Format_RGB888), cv_image) # FRAGMENTATION ERROR
+                #self.messager.cameraImages.emit(QImage(cv_image.data, width, height, bytesPerLine, QImage.Format_RGB888).rgbSwapped(), cv_image) # ORANGE IS BLUE

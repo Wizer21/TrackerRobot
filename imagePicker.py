@@ -16,12 +16,14 @@ class imagePicker(QGraphicsView):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-          self.messager.pixel_selected.emit(event.pos().x(), event.pos().y())
+            self.messager.pixel_selected.emit(event.pos().x(), event.pos().y())
+
 
     def mouseMoveEvent(self, event):
         self.messager.transfert_position.emit(event.pos().x(), event.pos().y())
         if event.buttons() == Qt.LeftButton:
             self.messager.pixel_selected.emit(event.pos().x(), event.pos().y())
+
 
     def leaveEvent(self, event):
         self.messager.selecter_leaved.emit()
