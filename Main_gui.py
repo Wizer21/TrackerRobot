@@ -7,18 +7,21 @@ from imagePicker import*
 from tracker import *
 from shape import*
 from numpy import *
+from controlWidget import*
 
 class Main_gui(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
-        self.thread_servos = ServoThread()
-        self.thread_camera = CameraThread()
         self.camera_image = QImage()
         self.range_color = 30
         self.tracking_on = False
         self.shape = Dynamic_shape()
         self.midColor = (0, 0, 0)
         self.pen_size = 3
+        # PI THREAD
+        self.servo_thread_x = ServoThread(3)
+        self.servo_thread_y = ServoThread(8)
+        self.thread_camera = CameraThread()
 
         self.widgetMain = QWidget(self)
         self.layoutMain = QGridLayout(self)
@@ -35,7 +38,7 @@ class Main_gui(QMainWindow):
         self.labelColorMAX = QLabel("max", self)
         self.sliderColorRange = QSlider(self)
 
-        self.sliderServo = QSlider(self)
+        self.widgetControl = controlWidget(self)
 
         self.build()
         self.run_camera()
@@ -58,24 +61,24 @@ class Main_gui(QMainWindow):
         self.layoutColor.addWidget(self.labelColorMAX, 2, 2)
         self.layoutColor.addWidget(self.sliderColorRange, 3, 0, 1, 3)
 
+        self.layoutPanel.addLayout(self.layoutColor, 0, 0)
+
+        self.layoutPanel.addWidget(self.widgetControl, 1, 0)
+
         # PARAMETER
-        self.sliderServo.setPageStep(1)
-        self.sliderServo.setRange(4, 48)
-        self.sliderServo.setOrientation(Qt.Horizontal)
         self.sliderColorRange.setOrientation(Qt.Horizontal)
         self.layoutPanel.setAlignment(Qt.AlignTop)
         self.viewDisplayCamera.setScene(self.sceneDisplayCamera)
         
+        # Motors
+        self.widgetControl.messager.xIsMoveUp.connect(self.cameraMoveFromPlayer_X)
+        self.widgetControl.messager.yIsMoveUp.connect(self.cameraMoveFromPlayer_Y)
+
         self.viewDisplayCamera.messager.pixel_selected.connect(self.color_clicked)
         self.viewDisplayCamera.messager.transfert_position.connect(self.color_hover)
         self.viewDisplayCamera.messager.selecter_leaved.connect(self.color_leaved)
         self.thread_camera.messager.cameraImages.connect(self.display_camera)
         self.thread_camera.messager.cameraSize.connect(self.set_up_view)
-        self.sliderServo.valueChanged.connect(self.updateServoPosOnSlider)
-
-    def updateServoPosOnSlider(self, val):
-        self.thread_servos.setUpInstructions(val)
-        self.thread_servos.start()
 
     def set_up_view(self, w, h):
         self.viewDisplayCamera.setFixedSize(QSize(w, h))
@@ -97,7 +100,19 @@ class Main_gui(QMainWindow):
             self.shape.build(data[0], data[1], data[2], data[3], data[4])
             self.draw_shape()
             print("adaptive color " + str(data[5]))
-            
+          
+    def cameraMoveFromPlayer_X(self, isUp):
+        if isUp:
+            self.servo_thread_x.callMovement(True)
+        else:
+            self.servo_thread_x.callMovement(False)
+
+    def cameraMoveFromPlayer_Y(self, isUp):
+            if isUp:
+                self.servo_thread_y.callMovement(True)
+            else:
+                self.servo_thread_y.callMovement(False)
+
 
     # COLOR PICKER CONNECTION
     def color_clicked(self, x, y):
@@ -113,6 +128,7 @@ class Main_gui(QMainWindow):
 
     # COLOR PICKER CONNECTION
     def color_hover(self, x, y):
+        test = 0
         # pix = QPixmap(self.labelColorMID.size())
         # pixel = self.camera_image.pixelColor(x, y)        
         # pix.fill(QColor(pixel.red(), pixel.green(), pixel.blue()))     
