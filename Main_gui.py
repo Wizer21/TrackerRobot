@@ -18,10 +18,12 @@ class Main_gui(QMainWindow):
         self.shape = Dynamic_shape()
         self.midColor = (0, 0, 0)
         self.pen_size = 3
+        self.servo_tracking = False
         # PI THREAD
         self.servo_thread_x = ServoThread(3)
         self.servo_thread_y = ServoThread(8)
         self.thread_camera = CameraThread()
+
 
         self.widgetMain = QWidget(self)
         self.layoutMain = QGridLayout(self)
@@ -39,6 +41,8 @@ class Main_gui(QMainWindow):
         self.sliderColorRange = QSlider(self)
 
         self.widgetControl = controlWidget(self)
+
+        self.check_servo_tracking = QCheckBox("ServoOn", self)
 
         self.build()
         self.run_camera()
@@ -65,6 +69,8 @@ class Main_gui(QMainWindow):
 
         self.layoutPanel.addWidget(self.widgetControl, 1, 0)
 
+        self.layoutPanel.addWidget(self.check_servo_tracking, 2, 0)
+
         # PARAMETER
         self.sliderColorRange.setOrientation(Qt.Horizontal)
         self.layoutPanel.setAlignment(Qt.AlignTop)
@@ -79,6 +85,7 @@ class Main_gui(QMainWindow):
         self.viewDisplayCamera.messager.selecter_leaved.connect(self.color_leaved)
         self.thread_camera.messager.cameraImages.connect(self.display_camera)
         self.thread_camera.messager.cameraSize.connect(self.set_up_view)
+        self.check_servo_tracking.stateChanged.connect(self.toggle_servo_tracking)
 
     def set_up_view(self, w, h):
         self.viewDisplayCamera.setFixedSize(QSize(w, h))
@@ -100,6 +107,9 @@ class Main_gui(QMainWindow):
             self.shape.build(data[0], data[1], data[2], data[3], data[4])
             self.draw_shape()
             print("adaptive color " + str(data[5]))
+
+            if self.servo_tracking:
+                self.calc_shape_position()
           
     def cameraMoveFromPlayer_X(self, isUp):
         if isUp:
@@ -180,3 +190,27 @@ class Main_gui(QMainWindow):
         self.sceneDisplayCamera.addLine(self.shape.center[0] - middle_width, self.shape.center[1], self.shape.center[0] + middle_width, self.shape.center[1], color_middle)
         self.sceneDisplayCamera.addLine(self.shape.center[0], self.shape.center[1] - middle_width, self.shape.center[0], self.shape.center[1] + middle_width, color_middle)
 
+    def toggle_servo_tracking(self, state):
+        if state == 2:
+            self.servo_tracking = True        
+        else:
+            self.servo_tracking = False
+
+    def calc_shape_position(self):
+        render_size = self.camera_image.size()
+        position = self.shape.center
+
+        width_part = int(render_size.width() / 5)
+        height_part = int(render_size.height() / 5)
+
+        if position[0] < width_part:
+            self.servo_thread_x.callMovement(False)
+        elif position[0] > int(width_part * 4):
+            self.servo_thread_x.callMovement(True)
+
+        if position[1] < height_part:
+            self.servo_thread_y.callMovement(False)
+        elif position[1] > int(height_part * 4):
+            self.servo_thread_y.callMovement(True)
+
+        

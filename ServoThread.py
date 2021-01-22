@@ -7,7 +7,7 @@ from time import sleep
 class ServoThread(QThread):
     def __init__(self, pin):
         QThread.__init__(self)
-        self.instructionServo = 10
+        self.instructionServo = 6.5
         self.controlPin = pin
 
         self.start()
@@ -52,8 +52,9 @@ class ServoThread(QThread):
         pwm.start(0)
 
         pwm.ChangeDutyCycle(position)        
-        sleep(0.3)
+        sleep(0.2)
 
         pwm.stop()
         GPIO.cleanup()
         self.exit()
+

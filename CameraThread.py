@@ -20,7 +20,7 @@ class CameraThread(QThread):
         cap = cv2.VideoCapture(0)
 
         #cap.set(10, 4)  # SET BRIGHNESS TOcameraImages 5
-        #cap.set(12, 20)  # SET SATURATION TO 10
+        cap.set(cv2.CAP_PROP_SATURATION, 5)  # SET SATURATION TO 10
 
         cap.set(cv2.CAP_PROP_FPS, 10)
         print("fps: " + str(cap.get(cv2.CAP_PROP_FPS)))

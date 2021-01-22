@@ -206,7 +206,15 @@ def define_starter(pixel_map):
     if validate_pixel(pixel_map, last_y, last_x):
         return
 
-    stepper = variations
+    stepper = [[0, -step],
+                 [+step, -step],
+                 [+step, 0],
+                 [+step, +step],
+                 [0, +step],
+                 [-step, +step],
+                 [-step, 0],
+                 [-step, -step]
+                 ]
 
     maxi_stepper = [[0, -step],
                     [0, -step],
