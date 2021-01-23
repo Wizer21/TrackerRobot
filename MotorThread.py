@@ -7,6 +7,7 @@ from time import sleep
 class MotorThread(QThread):
     def __init__(self):
         QThread.__init__(self)
+        self.run = False
         self.right_up = 17 
         self.right_down = 18
         self.left_up = 23
@@ -20,10 +21,33 @@ class MotorThread(QThread):
         }
 
         self.instructions = []
-        
+
+        # STOP MOTOR
+        self.cut_motor()
+
+    def cut_motor(self):
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(self.right_up, GPIO.OUT) 
+        GPIO.setup(self.right_down, GPIO.OUT)
+        GPIO.setup(self.left_down, GPIO.OUT)
+        GPIO.setup(self.left_up, GPIO.OUT) 
+
+        GPIO.output(self.right_up, 0)
+        GPIO.output(self.right_down, 0)
+        GPIO.output(self.left_up, 0)
+        GPIO.output(self.left_down, 0)
+
+        GPIO.cleanup()
+        self.exit()
+
     def callMovement(self, movement):
         self.instructions = self.moveList[movement]
+        self.run = True
         self.start()
+    
+    def stop_mouvement(self):
+        self.run = False
+        print("RUN IS FALSE")
         
     def run(self):        
         GPIO.setmode(GPIO.BCM) # SERVO MOTOR
@@ -34,10 +58,11 @@ class MotorThread(QThread):
         # MOTOR LEFT
         GPIO.setup(self.left_down, GPIO.OUT) # BACKWARD
         GPIO.setup(self.left_up, GPIO.OUT) # FORWARD
-
+        
         for move in self.instructions:
             GPIO.output(move[0], move[1])
-        sleep(0.2)
+        while self.run:
+            sleep(0.2)
 
         GPIO.output(self.right_up, 0)
         GPIO.output(self.right_down, 0)

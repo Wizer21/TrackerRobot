@@ -3,16 +3,20 @@ from PyQt5.QtGui import*
 from PyQt5.QtCore import*
 
 class Communication(QObject):
-    xIsMoveUp = pyqtSignal(bool)
-    yIsMoveUp = pyqtSignal(bool)
-    motorMove = pyqtSignal(str)
+    x_is_move_up = pyqtSignal(bool)
+    y_is_move_up = pyqtSignal(bool)
+    x_released = pyqtSignal()
+    y_released = pyqtSignal()
+    motor_move = pyqtSignal(str)
+    motor_released = pyqtSignal()
 
 
 class controlWidget(QWidget):
     def __init__(self, nparent):
         QWidget.__init__(self, parent = nparent)
         self.messager = Communication()
-
+        
+        # WIDGETS
         self.layoutMain = QGridLayout(self)
         self.labelServo = QLabel("Servo", self)
         self.buttonUp = QPushButton("up", self)
@@ -31,6 +35,7 @@ class controlWidget(QWidget):
         self.buttonBotMotor.setObjectName("back")
         self.buttonLeftMotor.setObjectName("left")
         
+        # UI
         self.setLayout(self.layoutMain)
         self.layoutMain.addWidget(self.labelServo, 0, 0)
         self.layoutMain.addWidget(self.buttonUp, 1, 1)
@@ -43,28 +48,50 @@ class controlWidget(QWidget):
         self.layoutMain.addWidget(self.buttonRightMotor, 5, 2)
         self.layoutMain.addWidget(self.buttonBotMotor, 5, 1)
         self.layoutMain.addWidget(self.buttonLeftMotor, 5, 0)
-        
-        self.buttonUp.clicked.connect(self.sendUp)
-        self.buttonRight.clicked.connect(self.sendRight)
-        self.buttonBot.clicked.connect(self.sendDown)
-        self.buttonLeft.clicked.connect(self.sendLeft)
 
-        self.buttonUpMotor.clicked.connect(self.motorMovement)
-        self.buttonRightMotor.clicked.connect(self.motorMovement)
-        self.buttonBotMotor.clicked.connect(self.motorMovement)
-        self.buttonLeftMotor.clicked.connect(self.motorMovement)
+        # CONNECTIONS
+        ## SERVOS PRESSED
+        self.buttonUp.pressed.connect(self.sendUp)
+        self.buttonRight.pressed.connect(self.sendRight)
+        self.buttonBot.pressed.connect(self.sendDown)
+        self.buttonLeft.pressed.connect(self.sendLeft)
+
+        self.buttonUp.released.connect(self.y_servo_released)
+        self.buttonRight.released.connect(self.x_servo_released)
+        self.buttonBot.released.connect(self.y_servo_released)
+        self.buttonLeft.released.connect(self.x_servo_released)
+
+        ## MOTOR PRESSED
+        self.buttonUpMotor.pressed.connect(self.motor_movement)
+        self.buttonRightMotor.pressed.connect(self.motor_movement)
+        self.buttonBotMotor.pressed.connect(self.motor_movement)
+        self.buttonLeftMotor.pressed.connect(self.motor_movement)
+        # MOTOR RELEASED
+        self.buttonUpMotor.released.connect(self.released_motor)
+        self.buttonRightMotor.released.connect(self.released_motor)
+        self.buttonBotMotor.released.connect(self.released_motor)
+        self.buttonLeftMotor.released.connect(self.released_motor)
     
     def sendUp(self):
-        self.messager.yIsMoveUp.emit(False)
+        self.messager.y_is_move_up.emit(False)
 
     def sendDown(self):
-        self.messager.yIsMoveUp.emit(True)
+        self.messager.y_is_move_up.emit(True)
 
     def sendRight(self):
-        self.messager.xIsMoveUp.emit(False)
+        self.messager.x_is_move_up.emit(False)
 
     def sendLeft(self):
-        self.messager.xIsMoveUp.emit(True)
+        self.messager.x_is_move_up.emit(True)
 
-    def motorMovement(self):
-        self.messager.motorMove.emit(self.sender().objectName())
+    def motor_movement(self):
+        self.messager.motor_move.emit(self.sender().objectName())
+
+    def released_motor(self):
+        self.messager.motor_released.emit()
+        
+    def x_servo_released(self):
+        self.messager.x_released.emit()
+
+    def y_servo_released(self):
+        self.messager.y_released.emit()

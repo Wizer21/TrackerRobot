@@ -84,18 +84,30 @@ class Main_gui(QMainWindow):
         self.layoutPanel.setAlignment(Qt.AlignTop)
         self.viewDisplayCamera.setScene(self.sceneDisplayCamera)
         
-        # Motors
-        self.widgetControl.messager.xIsMoveUp.connect(self.cameraMoveFromPlayer_X)
-        self.widgetControl.messager.yIsMoveUp.connect(self.cameraMoveFromPlayer_Y)
-        self.widgetControl.messager.motorMove.connect(self.moveRobot)
+        # SERVOS
+        self.widgetControl.messager.x_is_move_up.connect(self.cameraMoveFromPlayer_X)
+        self.widgetControl.messager.y_is_move_up.connect(self.cameraMoveFromPlayer_Y)
+        self.widgetControl.messager.x_released.connect(self.x_motor_stop)
+        self.widgetControl.messager.y_released.connect(self.y_motor_stop)
 
+        # MOTOR
+        self.widgetControl.messager.motor_move.connect(self.moveRobot)
+        self.widgetControl.messager.motor_released.connect(self.stop_motor)
+
+        # CAMERA 
+        self.thread_camera.messager.cameraImages.connect(self.display_camera)
+        self.thread_camera.messager.cameraSize.connect(self.set_up_view)
+
+        # COLOR PICKER
         self.viewDisplayCamera.messager.pixel_selected.connect(self.color_clicked)
         self.viewDisplayCamera.messager.transfert_position.connect(self.color_hover)
         self.viewDisplayCamera.messager.selecter_leaved.connect(self.color_leaved)
-        self.thread_camera.messager.cameraImages.connect(self.display_camera)
-        self.thread_camera.messager.cameraSize.connect(self.set_up_view)
-        self.check_servo_tracking.stateChanged.connect(self.toggle_servo_tracking)
+
+        # HEAT TIMER
         self.heatTimer.timeout.connect(self.update_heat)
+
+        # SERVO TRACKING
+        self.check_servo_tracking.stateChanged.connect(self.toggle_servo_tracking)
 
     def set_up_view(self, w, h):
         self.viewDisplayCamera.setFixedSize(QSize(w, h))
@@ -231,3 +243,12 @@ class Main_gui(QMainWindow):
         
     def moveRobot(self, move):
         self.motor_thread.callMovement(move)
+
+    def stop_motor(self):
+        self.motor_thread.stop_mouvement()
+
+    def x_motor_stop(self):
+        self.servo_thread_x.stop_servos()
+    
+    def y_motor_stop(self):
+        self.servo_thread_y.stop_servos()

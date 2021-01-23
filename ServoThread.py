@@ -7,10 +7,26 @@ from time import sleep
 class ServoThread(QThread):
     def __init__(self, pin):
         QThread.__init__(self)
-        self.instructionServo = 6.5
+        self.positionServo = 6.5
         self.controlPin = pin
+        self.run = False
+        self.action = 0.5
 
-        self.start()
+        # SET INITIAL POS
+        self.ini_position()
+
+    def ini_position(self):     
+        GPIO.setmode(GPIO.BCM) 
+        GPIO.setup(self.controlPin, GPIO.OUT) 
+        pwm = GPIO.PWM(self.controlPin, 50)
+        pwm.start(0)
+
+        pwm.ChangeDutyCycle(self.positionServo)     
+        sleep(0.3)
+
+        pwm.stop()
+        GPIO.cleanup()
+        self.exit()
 
     def callPosition(self, val):
         if val < 1 or val > 12:
@@ -18,42 +34,39 @@ class ServoThread(QThread):
             return False
         else:
             # IF THE POSITION IS SAFE, RUN THE THREAD
-            self.instructionServo = val
+            self.positionServo = val
             self.start() 
             return True
         
     def callMovement(self, isUp):
         if isUp:
-            val = self.instructionServo + 0.5
+            self.action = 0.4
         else:
-            val = self.instructionServo - 0.5
-            
-        if val < 1 or val > 12:
-            print("SLIDER DANGER " + str(val))
-            return False
-        else:
-            # IF THE POSITION IS SAFE, RUN THE THREAD
-            self.instructionServo = val
-            self.start() 
-            return True
+            self.action = -0.4
+
+        self.run = True
+        self.start() 
+
+    def stop_servos(self):
+        self.run = False
 
     def run(self):
-        position = round(self.instructionServo /1, 1)
-
-        if position < 1 or position > 12:  # SECURITY
-            print("SLIDER DANGER " + str(position))
-            self.exit()
-            return
-
-        print("MOTOR POSITION " + str(position))
-
         GPIO.setmode(GPIO.BCM) # SERVO MOTOR
         GPIO.setup(self.controlPin, GPIO.OUT) 
         pwm = GPIO.PWM(self.controlPin, 50) # pwm pulse with moderation
         pwm.start(0)
 
-        pwm.ChangeDutyCycle(position)        
-        sleep(0.2)
+        while self.run:
+            newpos = self.positionServo + self.action
+
+            if newpos < 1 or newpos > 12:  # SECURITY
+                print("SLIDER DANGER " + str(newpos))
+                self.exit()
+                break
+            
+            self.positionServo = newpos
+            pwm.ChangeDutyCycle(newpos)     
+            sleep(0.03)
 
         pwm.stop()
         GPIO.cleanup()
