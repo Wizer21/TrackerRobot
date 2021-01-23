@@ -47,7 +47,6 @@ class MotorThread(QThread):
     
     def stop_mouvement(self):
         self.run = False
-        print("RUN IS FALSE")
         
     def run(self):        
         GPIO.setmode(GPIO.BCM) # SERVO MOTOR
