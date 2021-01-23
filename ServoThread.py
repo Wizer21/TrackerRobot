@@ -42,11 +42,12 @@ class ServoThread(QThread):
 
         if position < 1 or position > 12:  # SECURITY
             print("SLIDER DANGER " + str(position))
+            self.exit()
             return
 
         print("MOTOR POSITION " + str(position))
 
-        GPIO.setmode(GPIO.BOARD) # SERVO MOTOR
+        GPIO.setmode(GPIO.BCM) # SERVO MOTOR
         GPIO.setup(self.controlPin, GPIO.OUT) 
         pwm = GPIO.PWM(self.controlPin, 50) # pwm pulse with moderation
         pwm.start(0)

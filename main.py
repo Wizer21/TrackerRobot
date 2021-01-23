@@ -10,4 +10,8 @@ if __name__ == "__main__":
     gui = Main_gui()
     gui.show()
 
+    with open("./theme.qss") as file:
+        theme = file.read()
+        app.setStyleSheet(theme)
+
     sys.exit(app.exec_())

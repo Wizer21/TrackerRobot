@@ -8,6 +8,8 @@ from tracker import *
 from shape import*
 from numpy import *
 from controlWidget import*
+import os
+from MotorThread import*
 
 class Main_gui(QMainWindow):
     def __init__(self):
@@ -19,11 +21,12 @@ class Main_gui(QMainWindow):
         self.midColor = (0, 0, 0)
         self.pen_size = 3
         self.servo_tracking = False
+        self.heatTimer = QTimer()
         # PI THREAD
-        self.servo_thread_x = ServoThread(3)
-        self.servo_thread_y = ServoThread(8)
+        self.servo_thread_x = ServoThread(24)
+        self.servo_thread_y = ServoThread(4)
         self.thread_camera = CameraThread()
-
+        self.motor_thread = MotorThread()
 
         self.widgetMain = QWidget(self)
         self.layoutMain = QGridLayout(self)
@@ -44,9 +47,12 @@ class Main_gui(QMainWindow):
 
         self.check_servo_tracking = QCheckBox("ServoOn", self)
 
+        self.label_heat = QLabel("0°", self)
+
         self.build()
         self.run_camera()
         self.resize(700, 700)
+        self.heatTimer.start(1000)
 
 
     def build(self):
@@ -71,6 +77,8 @@ class Main_gui(QMainWindow):
 
         self.layoutPanel.addWidget(self.check_servo_tracking, 2, 0)
 
+        self.layoutPanel.addWidget(self.label_heat, 3, 0)
+
         # PARAMETER
         self.sliderColorRange.setOrientation(Qt.Horizontal)
         self.layoutPanel.setAlignment(Qt.AlignTop)
@@ -79,6 +87,7 @@ class Main_gui(QMainWindow):
         # Motors
         self.widgetControl.messager.xIsMoveUp.connect(self.cameraMoveFromPlayer_X)
         self.widgetControl.messager.yIsMoveUp.connect(self.cameraMoveFromPlayer_Y)
+        self.widgetControl.messager.motorMove.connect(self.moveRobot)
 
         self.viewDisplayCamera.messager.pixel_selected.connect(self.color_clicked)
         self.viewDisplayCamera.messager.transfert_position.connect(self.color_hover)
@@ -86,6 +95,7 @@ class Main_gui(QMainWindow):
         self.thread_camera.messager.cameraImages.connect(self.display_camera)
         self.thread_camera.messager.cameraSize.connect(self.set_up_view)
         self.check_servo_tracking.stateChanged.connect(self.toggle_servo_tracking)
+        self.heatTimer.timeout.connect(self.update_heat)
 
     def set_up_view(self, w, h):
         self.viewDisplayCamera.setFixedSize(QSize(w, h))
@@ -213,4 +223,11 @@ class Main_gui(QMainWindow):
         elif position[1] > int(height_part * 4):
             self.servo_thread_y.callMovement(True)
 
+    def update_heat(self):
+        output = os.popen("/opt/vc/bin/vcgencmd measure_temp").read()
+        self.label_heat.setText(output)
         
+        self.heatTimer.start(1000)
+        
+    def moveRobot(self, move):
+        self.motor_thread.callMovement(move)
