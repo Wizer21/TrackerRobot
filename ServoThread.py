@@ -11,7 +11,8 @@ class ServoThread(QThread):
         self.controlPin = pin
         self.run = False
         self.action = 0.5
-
+        self.set_fixed_pos = True
+                
         # SET INITIAL POS
         self.ini_position()
 
@@ -29,14 +30,12 @@ class ServoThread(QThread):
         self.exit()
 
     def callPosition(self, val):
-        if val < 1 or val > 12:
+        if val < 1 or val > 12.5:
             print("SLIDER DANGER " + str(val))
-            return False
         else:
-            # IF THE POSITION IS SAFE, RUN THE THREAD
             self.positionServo = val
+            self.set_fixed_pos = True
             self.start() 
-            return True
         
     def callMovement(self, isUp):
         if isUp:
@@ -44,7 +43,9 @@ class ServoThread(QThread):
         else:
             self.action = -0.4
 
+        self.set_fixed_pos = False
         self.run = True
+        self.sleep = 0.03
         self.start() 
 
     def stop_servos(self):
@@ -56,17 +57,21 @@ class ServoThread(QThread):
         pwm = GPIO.PWM(self.controlPin, 50) # pwm pulse with moderation
         pwm.start(0)
 
-        while self.run:
-            newpos = self.positionServo + self.action
+        if self.set_fixed_pos:
+            pwm.ChangeDutyCycle(self.positionServo)     
+            sleep(0.1)
+        else:
+            while self.run:
+                newpos = self.positionServo + self.action
 
-            if newpos < 1 or newpos > 12:  # SECURITY
-                print("SLIDER DANGER " + str(newpos))
-                self.exit()
-                break
-            
-            self.positionServo = newpos
-            pwm.ChangeDutyCycle(newpos)     
-            sleep(0.03)
+                if newpos < 1 or newpos > 12:  # SECURITY
+                    print("SLIDER DANGER " + str(newpos))
+                    self.exit()
+                    break
+                
+                self.positionServo = newpos
+                pwm.ChangeDutyCycle(newpos)     
+                sleep(0.03)
 
         pwm.stop()
         GPIO.cleanup()

@@ -63,10 +63,14 @@ class MotorThread(QThread):
         while self.run:
             sleep(0.2)
 
-        GPIO.output(self.right_up, 0)
-        GPIO.output(self.right_down, 0)
-        GPIO.output(self.left_up, 0)
-        GPIO.output(self.left_down, 0)
+        #GPIO.setmode(GPIO.BCM) # SERVO MOTORr
+        try:
+            GPIO.output(self.right_up, 0)
+            GPIO.output(self.right_down, 0)
+            GPIO.output(self.left_up, 0)
+            GPIO.output(self.left_down, 0)
+            sleep(0.01)
+        except RuntimeError:
+            print(RuntimeError)
 
         GPIO.cleanup()
-        self.exit()

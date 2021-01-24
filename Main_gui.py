@@ -10,6 +10,8 @@ from numpy import *
 from controlWidget import*
 import os
 from MotorThread import*
+from controllerXbox import*
+
 
 class Main_gui(QMainWindow):
     def __init__(self):
@@ -27,6 +29,7 @@ class Main_gui(QMainWindow):
         self.servo_thread_y = ServoThread(4)
         self.thread_camera = CameraThread()
         self.motor_thread = MotorThread()
+        self.controller_xbox = controllerXbox()
 
         self.widgetMain = QWidget(self)
         self.layoutMain = QGridLayout(self)
@@ -89,10 +92,13 @@ class Main_gui(QMainWindow):
         self.widgetControl.messager.y_is_move_up.connect(self.cameraMoveFromPlayer_Y)
         self.widgetControl.messager.x_released.connect(self.x_motor_stop)
         self.widgetControl.messager.y_released.connect(self.y_motor_stop)
+        self.controller_xbox.messager.servo_move.connect(self.set_servo_position)
 
         # MOTOR
         self.widgetControl.messager.motor_move.connect(self.moveRobot)
         self.widgetControl.messager.motor_released.connect(self.stop_motor)
+        self.controller_xbox.messager.motor_mouvement.connect(self.moveRobot)
+        self.controller_xbox.messager.motor_stop.connect(self.stop_motor)
 
         # CAMERA 
         self.thread_camera.messager.cameraImages.connect(self.display_camera)
@@ -252,3 +258,9 @@ class Main_gui(QMainWindow):
     
     def y_motor_stop(self):
         self.servo_thread_y.stop_servos()
+
+    def set_servo_position(self, position):
+        x = round(position[0] / 5698.7, 1)
+        x = 12.5 - x 
+        self.servo_thread_x.callPosition(x)
+        self.servo_thread_y.callPosition(round(position[1] / 5698.7, 1) + 1)
