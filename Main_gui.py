@@ -136,7 +136,6 @@ class Main_gui(QMainWindow):
             data = cam_tracker(ndarray)            
             self.shape.build(data[0], data[1], data[2], data[3], data[4])
             self.draw_shape()
-            print("adaptive color " + str(data[5]))
 
             if self.servo_tracking:
                 self.calc_shape_position()
@@ -230,18 +229,18 @@ class Main_gui(QMainWindow):
         render_size = self.camera_image.size()
         position = self.shape.center
 
-        width_part = int(render_size.width() / 5)
-        height_part = int(render_size.height() / 5)
+        width_part = int(render_size.width() / 3)
+        height_part = int(render_size.height() / 3)
 
         if position[0] < width_part:
-            self.servo_thread_x.callMovement(-0.3)
-        elif position[0] > int(width_part * 4):
-            self.servo_thread_x.callMovement(0.3)
+            self.servo_thread_x.quick_movement(0.1)
+        elif position[0] > int(width_part * 2):
+            self.servo_thread_x.quick_movement(-0.1)
 
         if position[1] < height_part:
-            self.servo_thread_y.callMovement(-0.3)
-        elif position[1] > int(height_part * 4):
-            self.servo_thread_y.callMovement(0.3)
+            self.servo_thread_y.quick_movement(-0.1)
+        elif position[1] > int(height_part * 2):
+            self.servo_thread_y.quick_movement(0.1)
 
     def update_heat(self):
         output = os.popen("/opt/vc/bin/vcgencmd measure_temp").read()
@@ -262,7 +261,7 @@ class Main_gui(QMainWindow):
         self.servo_thread_y.stop_servos()
 
     def servos_move_controller(self, position):
-        x = round((position[0] - 32767.5) / 3276750, 3)
+        x = (position[0] - 32767.5) / 327675
         x = -x         
         self.servo_thread_x.callMovement(x)
-        self.servo_thread_y.callMovement(round((position[1] - 32767.5) / 109225, 3))
+        self.servo_thread_y.callMovement((position[1] - 32767.5) / 109225)

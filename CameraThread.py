@@ -15,14 +15,11 @@ class CameraThread(QThread):
 
 
     def run(self):    
-        my_width = 1000
-        my_height = 500
         cap = cv2.VideoCapture(0)
 
-        #cap.set(10, 4)  # SET BRIGHNESS TOcameraImages 5
         cap.set(cv2.CAP_PROP_SATURATION, 5)  # SET SATURATION TO 10
-
         cap.set(cv2.CAP_PROP_FPS, 10)
+        
         print("fps: " + str(cap.get(cv2.CAP_PROP_FPS)))
 
         self.messager.cameraSize.emit(cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -30,6 +27,7 @@ class CameraThread(QThread):
         keep = True   
         while keep:
             ret, frame = cap.read()
+            frame = cv2.flip(frame, -1)
             if ret:
                 cv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 height, width, channel = cv_image.shape

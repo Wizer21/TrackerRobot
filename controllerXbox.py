@@ -20,6 +20,7 @@ class controllerXbox(QThread):
         self.joy_y = 5
         self.joy_x = 2
         self.joy_position = [0, 0]
+        self.servo_position = [0, 0]
 
         self.directionnal_button_x = 16
         self.directionnal_button_y = 17
@@ -36,17 +37,19 @@ class controllerXbox(QThread):
                 #JOYSTICK
                 if event.type == ecodes.EV_ABS: 
                     # JOY 2
-                    if event.code == self.joy_x:                              
+                    if event.code == self.joy_x:            
+                        self.joy_position[0] = int(event.value)                  
                         if not self.null_min < event.value < self.null_max:
-                            self.joy_position[0] = int(event.value)
-                            self.check_joy()
+                            self.servo_position[0] = int(event.value)
+                            self.messager.servo_move.emit(self.servo_position)
                         elif self.null_min < self.joy_position[1] < self.null_max:
                             self.messager.servo_stop.emit()
 
                     elif event.code == self.joy_y: 
+                        self.joy_position[1] = int(event.value)  
                         if not self.null_min < event.value < self.null_max:
-                            self.joy_position[1] = int(event.value)
-                            self.check_joy()
+                            self.servo_position[1] = int(event.value)
+                            self.messager.servo_move.emit(self.servo_position)
                         elif self.null_min < self.joy_position[0] < self.null_max:
                             self.messager.servo_stop.emit()
 
@@ -70,8 +73,3 @@ class controllerXbox(QThread):
                         elif pos == 0:
                             self.messager.motor_stop.emit()
     
-    def check_joy(self):
-        if self.null_min < self.joy_position[0] < self.null_max and self.null_min < self.joy_position[1] < self.null_max:
-            self.messager.servo_stop.emit()
-        else:
-            self.messager.servo_move.emit(self.joy_position)

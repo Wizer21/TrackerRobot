@@ -30,13 +30,29 @@ class ServoThread(QThread):
         GPIO.cleanup()
 
     def callPosition(self, val):
-        if val < 1 or val > 12.5:
-            print("SLIDER DANGER " + str(val))
+        if 1 < val < 12:
+            print("DANGER " + str(val))
         else:
             self.positionServo = val
             self.set_fixed_pos = True
             self.start() 
-        
+
+    def quick_movement(self, value):     
+        GPIO.setup(self.controlPin, GPIO.OUT) 
+        pwm = GPIO.PWM(self.controlPin, 50) # pwm pulse with moderation
+        pwm.start(0)
+
+        newpos = self.positionServo + value
+        if not 1.5 < newpos < 12:  # SECURITY
+            print("DANGER " + str(newpos))
+            return
+                    
+        pwm.ChangeDutyCycle(newpos) 
+        sleep(0.05)  
+         
+        self.positionServo = newpos 
+
+
     def callMovement(self, value):     
         self.action = value
 
@@ -53,29 +69,15 @@ class ServoThread(QThread):
 
         while self.run:
             newpos = self.positionServo + self.action
-
-            if not 1 < newpos < 12.5:  # SECURITY
-                print("SLIDER DANGER " + str(newpos))
+            if not 1.5 < newpos < 12:  # SECURITY
+                print("DANGER " + str(newpos))
                 break
-            
+                        
+            pwm.ChangeDutyCycle(round(newpos, 4))  
+            self.positionServo = newpos 
 
-            self.positionServo = newpos
-            pwm.ChangeDutyCycle(newpos)   
+            sleep(0.05)  
 
-            print("dab")
-
-            if self.lastpos > newpos:
-                difference = self.lastpos - newpos
-            else:
-                difference = newpos - self.lastpos
-            print("diff " + str(difference))
-
-            tims_to_sleep = (difference * 0.3) / 11.5
-            print("sleep " + str(tims_to_sleep))
-
-            sleep(tims_to_sleep)  
-
-            self.lastpos = newpos
 
         pwm.stop()
 
