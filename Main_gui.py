@@ -92,7 +92,9 @@ class Main_gui(QMainWindow):
         self.widgetControl.messager.y_is_move_up.connect(self.cameraMoveFromPlayer_Y)
         self.widgetControl.messager.x_released.connect(self.x_motor_stop)
         self.widgetControl.messager.y_released.connect(self.y_motor_stop)
-        self.controller_xbox.messager.servo_move.connect(self.set_servo_position)
+        self.controller_xbox.messager.servo_move.connect(self.servos_move_controller)
+        self.controller_xbox.messager.servo_stop.connect(self.x_motor_stop)
+        self.controller_xbox.messager.servo_stop.connect(self.y_motor_stop)
 
         # MOTOR
         self.widgetControl.messager.motor_move.connect(self.moveRobot)
@@ -232,14 +234,14 @@ class Main_gui(QMainWindow):
         height_part = int(render_size.height() / 5)
 
         if position[0] < width_part:
-            self.servo_thread_x.callMovement(False)
+            self.servo_thread_x.callMovement(-0.3)
         elif position[0] > int(width_part * 4):
-            self.servo_thread_x.callMovement(True)
+            self.servo_thread_x.callMovement(0.3)
 
         if position[1] < height_part:
-            self.servo_thread_y.callMovement(False)
+            self.servo_thread_y.callMovement(-0.3)
         elif position[1] > int(height_part * 4):
-            self.servo_thread_y.callMovement(True)
+            self.servo_thread_y.callMovement(0.3)
 
     def update_heat(self):
         output = os.popen("/opt/vc/bin/vcgencmd measure_temp").read()
@@ -259,8 +261,8 @@ class Main_gui(QMainWindow):
     def y_motor_stop(self):
         self.servo_thread_y.stop_servos()
 
-    def set_servo_position(self, position):
-        x = round(position[0] / 5698.7, 1)
-        x = 12.5 - x 
-        self.servo_thread_x.callPosition(x)
-        self.servo_thread_y.callPosition(round(position[1] / 5698.7, 1) + 1)
+    def servos_move_controller(self, position):
+        x = round((position[0] - 32767.5) / 3276750, 3)
+        x = -x         
+        self.servo_thread_x.callMovement(x)
+        self.servo_thread_y.callMovement(round((position[1] - 32767.5) / 109225, 3))

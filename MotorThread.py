@@ -12,6 +12,7 @@ class MotorThread(QThread):
         self.right_down = 18
         self.left_up = 23
         self.left_down = 22
+        self.instructions = []
 
         self.moveList = {
             "front": [[self.left_up, 1], [self.left_down, 0],[self.right_up, 1], [self.right_down, 0]],
@@ -20,25 +21,23 @@ class MotorThread(QThread):
             "left": [[self.left_up, 0], [self.left_down, 1],[self.right_up, 1], [self.right_down, 0]]
         }
 
-        self.instructions = []
+        GPIO.setmode(GPIO.BCM) # SERVO MOTOR
+        # MOTOR RIGHT
+        GPIO.setup(self.right_up, GPIO.OUT) # FORWARD
+        GPIO.setup(self.right_down, GPIO.OUT) # BACKWARD
+
+        # MOTOR LEFT
+        GPIO.setup(self.left_down, GPIO.OUT) # BACKWARD
+        GPIO.setup(self.left_up, GPIO.OUT) # FORWARD
 
         # STOP MOTOR
         self.cut_motor()
 
     def cut_motor(self):
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(self.right_up, GPIO.OUT) 
-        GPIO.setup(self.right_down, GPIO.OUT)
-        GPIO.setup(self.left_down, GPIO.OUT)
-        GPIO.setup(self.left_up, GPIO.OUT) 
-
         GPIO.output(self.right_up, 0)
         GPIO.output(self.right_down, 0)
         GPIO.output(self.left_up, 0)
         GPIO.output(self.left_down, 0)
-
-        GPIO.cleanup()
-        self.exit()
 
     def callMovement(self, movement):
         self.instructions = self.moveList[movement]
@@ -49,28 +48,15 @@ class MotorThread(QThread):
         self.run = False
         
     def run(self):        
-        GPIO.setmode(GPIO.BCM) # SERVO MOTOR
-        # MOTOR RIGHT
-        GPIO.setup(self.right_up, GPIO.OUT) # FORWARD
-        GPIO.setup(self.right_down, GPIO.OUT) # BACKWARD
-
-        # MOTOR LEFT
-        GPIO.setup(self.left_down, GPIO.OUT) # BACKWARD
-        GPIO.setup(self.left_up, GPIO.OUT) # FORWARD
         
         for move in self.instructions:
             GPIO.output(move[0], move[1])
         while self.run:
             sleep(0.2)
+       
+        GPIO.output(self.right_up, 0)
+        GPIO.output(self.right_down, 0)
+        GPIO.output(self.left_up, 0)
+        GPIO.output(self.left_down, 0)
+        sleep(0.01)
 
-        #GPIO.setmode(GPIO.BCM) # SERVO MOTORr
-        try:
-            GPIO.output(self.right_up, 0)
-            GPIO.output(self.right_down, 0)
-            GPIO.output(self.left_up, 0)
-            GPIO.output(self.left_down, 0)
-            sleep(0.01)
-        except RuntimeError:
-            print(RuntimeError)
-
-        GPIO.cleanup()
