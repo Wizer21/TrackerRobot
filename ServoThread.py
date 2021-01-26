@@ -21,36 +21,36 @@ class ServoThread(QThread):
     def ini_position(self):     
         GPIO.setup(self.controlPin, GPIO.OUT) 
         pwm = GPIO.PWM(self.controlPin, 50)
-        pwm.start(0)
+        pwm.start(self.positionServo)
 
         pwm.ChangeDutyCycle(self.positionServo)     
         sleep(0.3)
 
         pwm.stop()
-        GPIO.cleanup()
 
     def callPosition(self, val):
-        if 1 < val < 12:
+        if not 2.5 < val < 12.5:
             print("DANGER " + str(val))
         else:
             self.positionServo = val
             self.set_fixed_pos = True
             self.start() 
 
-    def quick_movement(self, value):     
+    def quick_movement(self, value):   
+        newpos = self.positionServo + value
+        if not 2.5 < newpos < 12.5:  # SECURITY
+            print("DANGER " + str(newpos))
+            return False
+
         GPIO.setup(self.controlPin, GPIO.OUT) 
         pwm = GPIO.PWM(self.controlPin, 50) # pwm pulse with moderation
-        pwm.start(0)
-
-        newpos = self.positionServo + value
-        if not 1.5 < newpos < 12:  # SECURITY
-            print("DANGER " + str(newpos))
-            return
+        pwm.start(self.positionServo)
                     
         pwm.ChangeDutyCycle(newpos) 
         sleep(0.05)  
          
         self.positionServo = newpos 
+        return True
 
 
     def callMovement(self, value):     
@@ -62,22 +62,21 @@ class ServoThread(QThread):
     def stop_servos(self):
         self.run = False
 
-    def run(self):
+    def run(self):        
         GPIO.setup(self.controlPin, GPIO.OUT) 
         pwm = GPIO.PWM(self.controlPin, 50) # pwm pulse with moderation
-        pwm.start(0)
-
         while self.run:
-            newpos = self.positionServo + self.action
-            if not 1.5 < newpos < 12:  # SECURITY
+            newpos = round(self.positionServo + self.action, 2)
+            if not 2.5 < newpos < 12.5:  # SECURITY
                 print("DANGER " + str(newpos))
                 break
-                        
-            pwm.ChangeDutyCycle(round(newpos, 4))  
+
+
+            pwm.start(self.positionServo)                            
+            pwm.ChangeDutyCycle(newpos)  
             self.positionServo = newpos 
+            print("pos " + str(newpos))
 
-            sleep(0.05)  
-
+            sleep(0.1)  
 
         pwm.stop()
-
