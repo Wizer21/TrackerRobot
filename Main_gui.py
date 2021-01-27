@@ -233,15 +233,15 @@ class Main_gui(QMainWindow):
         height_part = int(render_size.height() / 3)
 
         if position[0] < width_part:
-            if not self.servo_thread_x.quick_movement(0.25):
+            if not self.servo_thread_x.quick_movement(15):
                 self.motor_thread.quick_motor_move("left")
         elif position[0] > int(width_part * 2):
-            if not self.servo_thread_x.quick_movement(-0.25):
+            if not self.servo_thread_x.quick_movement(-15):
                 self.motor_thread.quick_motor_move("right")
         if position[1] < height_part:
-            self.servo_thread_y.quick_movement(-0.25)
+            self.servo_thread_y.quick_movement(-15)
         elif position[1] > int(height_part * 2):
-            self.servo_thread_y.quick_movement(0.25)
+            self.servo_thread_y.quick_movement(15)
 
     def update_heat(self):
         output = os.popen("/opt/vc/bin/vcgencmd measure_temp").read()
@@ -262,7 +262,7 @@ class Main_gui(QMainWindow):
         self.servo_thread_y.stop_servos()
 
     def servos_move_controller(self, position):
-        x = (position[0] - 32767.5) / 327675
+        x = (position[0] - 32767.5) / 3276.7
         x = -x
         self.servo_thread_x.callMovement(x)
-        self.servo_thread_y.callMovement((position[1] - 32767.5) / 327675)
+        self.servo_thread_y.callMovement((position[1] - 32767.5) / 3276.7)

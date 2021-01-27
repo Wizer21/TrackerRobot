@@ -1,35 +1,37 @@
 from PyQt5.QtWidgets import*
 from PyQt5.QtGui import*
 from PyQt5.QtCore import*
-import RPi.GPIO as GPIO # general-purpose input/output
+import pigpio
 from time import sleep 
 
 class ServoThread(QThread):
     def __init__(self, pin):
         QThread.__init__(self)
-        self.positionServo = 6.5
         self.controlPin = pin
-        self.run = False
+        self.run_servo = False
         self.action = 0.5
         self.lastpos = 0
+        self.quick = False
+        if pin == 4:
+            self.positionServo = 1000
+        else:
+            self.positionServo = 1500
 
-        GPIO.setmode(GPIO.BCM) # SERVO MOTOR
+        self.pi = pigpio.pi() # Connect to local pi
+        self.pi.set_mode(pin, pigpio.OUTPUT)
+        print(str(self.pi.get_PWM_real_range(pin)))
                 
         # SET INITIAL POS
         self.ini_position()
 
     def ini_position(self):     
-        GPIO.setup(self.controlPin, GPIO.OUT) 
-        pwm = GPIO.PWM(self.controlPin, 50)
-        pwm.start(self.positionServo)
+        self.pi.set_servo_pulsewidth(self.controlPin, self.positionServo)     
+        sleep(0.2)
 
-        pwm.ChangeDutyCycle(self.positionServo)     
-        sleep(0.3)
-
-        pwm.stop()
+        self.pi.set_servo_pulsewidth(self.controlPin, 0)   
 
     def callPosition(self, val):
-        if not 2.5 < val < 12.5:
+        if not 500 < val < 2500:
             print("DANGER " + str(val))
         else:
             self.positionServo = val
@@ -37,46 +39,46 @@ class ServoThread(QThread):
             self.start() 
 
     def quick_movement(self, value):   
-        newpos = self.positionServo + value
-        if not 2.5 < newpos < 12.5:  # SECURITY
+        #self.action =  value
+        newpos = round(self.positionServo + value)
+        if not 500 < newpos < 2500:  # SECURITY
             print("DANGER " + str(newpos))
             return False
 
-        GPIO.setup(self.controlPin, GPIO.OUT) 
-        pwm = GPIO.PWM(self.controlPin, 50) # pwm pulse with moderation
-        pwm.start(self.positionServo)
-                    
-        pwm.ChangeDutyCycle(newpos) 
-        sleep(0.05)  
-         
-        self.positionServo = newpos 
-        return True
+        self.pi.set_servo_pulsewidth(self.controlPin, newpos)   
+        sleep(0.01)
+        self.pi.set_servo_pulsewidth(self.controlPin, 0)   
+        self.positionServo = newpos
 
+        #self.run_servo = True
+        #self.quick = True
+        #self.start()
+        return True
 
     def callMovement(self, value):     
         self.action = value
 
-        self.run = True
+        self.run_servo = True
         self.start() 
 
     def stop_servos(self):
-        self.run = False
+        self.run_servo = False
 
-    def run(self):        
-        GPIO.setup(self.controlPin, GPIO.OUT) 
-        pwm = GPIO.PWM(self.controlPin, 50) # pwm pulse with moderation
-        while self.run:
-            newpos = round(self.positionServo + self.action, 2)
-            if not 2.5 < newpos < 12.5:  # SECURITY
+    def run(self):      
+        while self.run_servo:
+            newpos = round(self.positionServo + self.action)
+            if not 500 < newpos < 2500:  # SECURITY
                 print("DANGER " + str(newpos))
                 break
-
-
-            pwm.start(self.positionServo)                            
-            pwm.ChangeDutyCycle(newpos)  
-            self.positionServo = newpos 
+  
+            self.pi.set_servo_pulsewidth(self.controlPin, newpos)   
+            sleep(0.01)  
             print("pos " + str(newpos))
 
-            sleep(0.1)  
+            self.positionServo = newpos 
 
-        pwm.stop()
+            if self.quick:
+                self.run_servo = False
+                self.quick = False  
+
+        self.pi.set_servo_pulsewidth(self.controlPin, 0)   
