@@ -49,9 +49,6 @@ class MotorThread(QThread):
         self.instructions = self.moveList[movement]
         self.run_motor = True
         self.start()
-    
-    def stop_mouvement(self):
-        self.run_motor = False
         
     def run(self):       
         if self.quick:

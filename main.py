@@ -3,15 +3,30 @@ from PyQt5.QtWidgets import*
 from PyQt5.QtGui import*
 from PyQt5.QtCore import*
 from Main_gui import*
+from Utils import*
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    
+    # DELETE '?' ON QDIALOG
+    app.setAttribute(Qt.AA_DisableWindowContextHelpButton)
+
+    # GET WINDOW SIZE
+    rec = QRect(app.primaryScreen().availableGeometry())
+    resolution = [rec.width(), rec.height()]
+
+    font_size = int(resolution[0] / 110)
+    font_qss = "QWidget{ font-size:" + str(font_size) + "px;}"
+
+    # APPLY STYLESHEET
+    with open("./theme.qss") as file:
+        theme = file.read()
+        app.setStyleSheet(font_qss + theme)
+
+    # SET UP DEFAULT SIZE IN Utils
+    uti = Utils(font_size, resolution)
 
     gui = Main_gui()
     gui.show()
-
-    with open("./theme.qss") as file:
-        theme = file.read()
-        app.setStyleSheet(theme)
 
     sys.exit(app.exec_())

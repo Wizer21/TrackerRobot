@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import*
 from PyQt5.QtGui import*
 from PyQt5.QtCore import*
+from Utils import*
 
 class Communication(QObject):
     x_is_move_up = pyqtSignal(bool)
@@ -18,17 +19,17 @@ class controlWidget(QWidget):
         
         # WIDGETS
         self.layoutMain = QGridLayout(self)
-        self.labelServo = QLabel("Servo", self)
-        self.buttonUp = QPushButton("up", self)
-        self.buttonRight = QPushButton("right", self)
-        self.buttonBot = QPushButton("bot", self)
-        self.buttonLeft = QPushButton("left", self)
+        self.labelServo = QLabel(self)
+        self.buttonUp = QPushButton(self)
+        self.buttonRight = QPushButton(self)
+        self.buttonBot = QPushButton(self)
+        self.buttonLeft = QPushButton(self)
 
-        self.labelMotor = QLabel("Motor", self)
-        self.buttonUpMotor = QPushButton("front", self)
-        self.buttonRightMotor = QPushButton("right", self)
-        self.buttonBotMotor = QPushButton("back", self)
-        self.buttonLeftMotor = QPushButton("left", self)
+        self.labelMotor = QLabel(self)
+        self.buttonUpMotor = QPushButton(self)
+        self.buttonRightMotor = QPushButton(self)
+        self.buttonBotMotor = QPushButton(self)
+        self.buttonLeftMotor = QPushButton(self)
 
         self.buttonUpMotor.setObjectName("front")
         self.buttonRightMotor.setObjectName("right")
@@ -38,16 +39,38 @@ class controlWidget(QWidget):
         # UI
         self.setLayout(self.layoutMain)
         self.layoutMain.addWidget(self.labelServo, 0, 0)
-        self.layoutMain.addWidget(self.buttonUp, 1, 1)
-        self.layoutMain.addWidget(self.buttonRight, 2, 2)
-        self.layoutMain.addWidget(self.buttonBot, 2, 1)
-        self.layoutMain.addWidget(self.buttonLeft, 2, 0)
+        self.layoutMain.addWidget(self.buttonUp, 0, 1)
+        self.layoutMain.addWidget(self.buttonRight, 1, 2)
+        self.layoutMain.addWidget(self.buttonBot, 1, 1)
+        self.layoutMain.addWidget(self.buttonLeft, 1, 0)
         
-        self.layoutMain.addWidget(self.labelMotor, 3, 0)
-        self.layoutMain.addWidget(self.buttonUpMotor, 4, 1)
-        self.layoutMain.addWidget(self.buttonRightMotor, 5, 2)
-        self.layoutMain.addWidget(self.buttonBotMotor, 5, 1)
-        self.layoutMain.addWidget(self.buttonLeftMotor, 5, 0)
+        self.layoutMain.addWidget(self.labelMotor, 2, 0)
+        self.layoutMain.addWidget(self.buttonUpMotor, 2, 1)
+        self.layoutMain.addWidget(self.buttonRightMotor, 3, 2)
+        self.layoutMain.addWidget(self.buttonBotMotor, 3, 1)
+        self.layoutMain.addWidget(self.buttonLeftMotor, 3, 0)
+
+        # PARAMETERS 
+        self.labelServo.setPixmap(Utils.get_pixmap("camera"))
+        Utils.set_icon(self.buttonUp, "up", 1)
+        Utils.set_icon(self.buttonRight, "right", 1)
+        Utils.set_icon(self.buttonBot, "down", 1)
+        Utils.set_icon(self.buttonLeft, "left", 1)
+
+        self.labelMotor.setPixmap(Utils.get_pixmap("engine"))
+        Utils.set_icon(self.buttonUpMotor, "up", 1)
+        Utils.set_icon(self.buttonRightMotor, "right", 1)
+        Utils.set_icon(self.buttonBotMotor, "down", 1)
+        Utils.set_icon(self.buttonLeftMotor, "left", 1)
+
+        self.buttonUp.setCursor(Qt.PointingHandCursor)
+        self.buttonRight.setCursor(Qt.PointingHandCursor)
+        self.buttonBot.setCursor(Qt.PointingHandCursor)
+        self.buttonLeft.setCursor(Qt.PointingHandCursor)
+        self.buttonUpMotor.setCursor(Qt.PointingHandCursor)
+        self.buttonRightMotor.setCursor(Qt.PointingHandCursor)
+        self.buttonBotMotor.setCursor(Qt.PointingHandCursor)
+        self.buttonLeftMotor.setCursor(Qt.PointingHandCursor)
 
         # CONNECTIONS
         ## SERVOS PRESSED

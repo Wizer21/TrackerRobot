@@ -15,7 +15,12 @@ class controllerXbox(QThread):
         self.messager = Communication()     
         self.controller_on = True  
 
-        self.gamepad = InputDevice('/dev/input/event4')
+        try:
+            self.gamepad = InputDevice('/dev/input/event4')
+        except FileNotFoundError:
+            print("NO CONTROLLER FOUND")
+            return
+
 
         self.joy_y = 5
         self.joy_x = 2

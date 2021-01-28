@@ -11,6 +11,7 @@ from controlWidget import*
 import os
 from MotorThread import*
 from controllerXbox import*
+from Utils import*
 
 
 class Main_gui(QMainWindow):
@@ -41,7 +42,7 @@ class Main_gui(QMainWindow):
         self.layoutColor = QGridLayout(self)
         self.labelColorTitle = QLabel("Color", self)
         self.labelColorHover = QLabel("hover", self)
-        self.labelColorMIN= QLabel("min", self)
+        self.labelColorMIN = QLabel("min", self)
         self.labelColorMID = QLabel("mid", self)
         self.labelColorMAX = QLabel("max", self)
         self.sliderColorRange = QSlider(self)
@@ -50,6 +51,7 @@ class Main_gui(QMainWindow):
 
         self.check_servo_tracking = QCheckBox("ServoOn", self)
 
+        self.label_icon_pi = QLabel(self)
         self.label_heat = QLabel("0°", self)
 
         self.build()
@@ -65,7 +67,7 @@ class Main_gui(QMainWindow):
         self.layoutMain.addWidget(self.viewDisplayCamera, 0, 1)
 
         self.layoutMain.addLayout(self.layoutPanel, 0, 0)
-        self.layoutPanel.addLayout(self.layoutColor, 0, 0)
+        self.layoutPanel.addLayout(self.layoutColor, 0, 0, 1, 2)
         
         self.layoutColor.addWidget(self.labelColorTitle, 0, 0, 1, 3)
         self.layoutColor.addWidget(self.labelColorHover, 1, 0, 1, 3)
@@ -74,19 +76,22 @@ class Main_gui(QMainWindow):
         self.layoutColor.addWidget(self.labelColorMAX, 2, 2)
         self.layoutColor.addWidget(self.sliderColorRange, 3, 0, 1, 3)
 
-        self.layoutPanel.addLayout(self.layoutColor, 0, 0)
+        self.layoutPanel.addWidget(self.widgetControl, 1, 0, 1, 2)
 
-        self.layoutPanel.addWidget(self.widgetControl, 1, 0)
+        self.layoutPanel.addWidget(self.check_servo_tracking, 2, 0, 1, 2)
 
-        self.layoutPanel.addWidget(self.check_servo_tracking, 2, 0)
-
-        self.layoutPanel.addWidget(self.label_heat, 3, 0)
+        self.layoutPanel.addWidget(self.label_icon_pi, 3, 0, Qt.AlignTop)
+        self.layoutPanel.addWidget(self.label_heat, 3, 1)
 
         # PARAMETER
         self.sliderColorRange.setOrientation(Qt.Horizontal)
-        self.layoutPanel.setAlignment(Qt.AlignTop)
         self.viewDisplayCamera.setScene(self.sceneDisplayCamera)
-        
+        self.label_icon_pi.setPixmap(Utils.get_resized_pixmap("pi", 0.8))
+        self.layoutPanel.setAlignment(Qt.AlignTop)
+        self.layoutPanel.setColumnStretch(0, 0)
+        self.layoutPanel.setColumnStretch(1, 1)
+        Utils.resize_font(self.label_heat, 2)
+
         # SERVOS
         self.widgetControl.messager.x_is_move_up.connect(self.cameraMoveFromPlayer_X)
         self.widgetControl.messager.y_is_move_up.connect(self.cameraMoveFromPlayer_Y)
@@ -142,15 +147,15 @@ class Main_gui(QMainWindow):
           
     def cameraMoveFromPlayer_X(self, isUp):
         if isUp:
-            self.servo_thread_x.quick_movement(0.1)
+            self.servo_thread_x.quick_movement(5)
         else:
-            self.servo_thread_x.quick_movement(-0.1)
+            self.servo_thread_x.quick_movement(-5)
 
     def cameraMoveFromPlayer_Y(self, isUp):
         if isUp:
-            self.servo_thread_y.quick_movement(0.1)
+            self.servo_thread_y.quick_movement(5)
         else:
-            self.servo_thread_y.quick_movement(-0.1)
+            self.servo_thread_y.quick_movement(-5)
 
 
     # COLOR PICKER CONNECTION
@@ -233,33 +238,47 @@ class Main_gui(QMainWindow):
         height_part = int(render_size.height() / 3)
 
         if position[0] < width_part:
-            if not self.servo_thread_x.quick_movement(15):
+            if not self.servo_thread_x.quick_movement(5):
                 self.motor_thread.quick_motor_move("left")
         elif position[0] > int(width_part * 2):
-            if not self.servo_thread_x.quick_movement(-15):
+            if not self.servo_thread_x.quick_movement(-5):
                 self.motor_thread.quick_motor_move("right")
+        else:
+            self.servo_thread_x.run_servo = False
+            
         if position[1] < height_part:
-            self.servo_thread_y.quick_movement(-15)
+            self.servo_thread_y.quick_movement(-5)
         elif position[1] > int(height_part * 2):
-            self.servo_thread_y.quick_movement(15)
+            self.servo_thread_y.quick_movement(5)
+        else:
+            self.servo_thread_y.run_servo = False
 
     def update_heat(self):
         output = os.popen("/opt/vc/bin/vcgencmd measure_temp").read()
-        self.label_heat.setText(output)
-        
+        val = output[5:].replace("C", "")
+        val = val.replace("/n", "")
+        val = val.replace("'", "")
+        val = float(val[:-1])
+
+        self.label_heat.setText(output[5:])
+        if val >= 75:
+            Utils.resize_and_color_font(self.label_heat, 2, "#d32f2f")
+        else:
+            Utils.resize_and_color_font(self.label_heat, 2, "white")
+            
         self.heatTimer.start(1000)
         
     def moveRobot(self, move):
         self.motor_thread.callMovement(move)
 
     def stop_motor(self):
-        self.motor_thread.stop_mouvement()
+        self.motor_thread.run_motor = False
 
     def x_motor_stop(self):
-        self.servo_thread_x.stop_servos()
+        self.servo_thread_x.run_servo = False
     
     def y_motor_stop(self):
-        self.servo_thread_y.stop_servos()
+        self.servo_thread_y.run_servo = False
 
     def servos_move_controller(self, position):
         x = (position[0] - 32767.5) / 3276.7
