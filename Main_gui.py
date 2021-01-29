@@ -22,7 +22,7 @@ class Main_gui(QMainWindow):
         self.tracking_on = False
         self.shape = Dynamic_shape()
         self.midColor = (0, 0, 0)
-        self.pen_size = 3
+        self.pen_size = 5
         self.servo_tracking = False
         self.heatTimer = QTimer()
         # PI THREAD
@@ -41,15 +41,15 @@ class Main_gui(QMainWindow):
 
         self.layoutColor = QGridLayout(self)
         self.labelColorTitle = QLabel("Color", self)
-        self.labelColorHover = QLabel("hover", self)
-        self.labelColorMIN = QLabel("min", self)
-        self.labelColorMID = QLabel("mid", self)
-        self.labelColorMAX = QLabel("max", self)
+        self.labelColorHover = QLabel(self)
+        self.labelColorMIN = QLabel(self)
+        self.labelColorMID = QLabel(self)
+        self.labelColorMAX = QLabel(self)
         self.sliderColorRange = QSlider(self)
 
         self.widgetControl = controlWidget(self)
 
-        self.check_servo_tracking = QCheckBox("ServoOn", self)
+        self.check_servo_tracking = QCheckBox("Item tracking", self)
 
         self.label_icon_pi = QLabel(self)
         self.label_heat = QLabel("0°", self)
@@ -58,6 +58,7 @@ class Main_gui(QMainWindow):
         self.run_camera()
         self.resize(700, 700)
         self.heatTimer.start(1000)
+        self.calculate_and_display_color_range()
 
 
     def build(self):
@@ -85,12 +86,15 @@ class Main_gui(QMainWindow):
 
         # PARAMETER
         self.sliderColorRange.setOrientation(Qt.Horizontal)
+        self.sliderColorRange.setValue(self.range_color)
+        self.sliderColorRange.setRange(0, 50)
         self.viewDisplayCamera.setScene(self.sceneDisplayCamera)
         self.label_icon_pi.setPixmap(Utils.get_resized_pixmap("pi", 0.8))
         self.layoutPanel.setAlignment(Qt.AlignTop)
         self.layoutPanel.setColumnStretch(0, 0)
         self.layoutPanel.setColumnStretch(1, 1)
         Utils.resize_font(self.label_heat, 2)
+        Utils.resize_font(self.check_servo_tracking, 1.5)
 
         # SERVOS
         self.widgetControl.messager.x_is_move_up.connect(self.cameraMoveFromPlayer_X)
@@ -122,8 +126,11 @@ class Main_gui(QMainWindow):
         # SERVO TRACKING
         self.check_servo_tracking.stateChanged.connect(self.toggle_servo_tracking)
 
+        # WIDGET 
+        self.sliderColorRange.valueChanged.connect(self.update_color_range)
+
     def set_up_view(self, w, h):
-        self.viewDisplayCamera.setFixedSize(QSize(w, h))
+        self.viewDisplayCamera.setFixedSize(QSize(int(w * 1.03), int(h * 1.03)))
 
     # START CAMERA THREAD
     def run_camera(self):
@@ -133,17 +140,25 @@ class Main_gui(QMainWindow):
     def display_camera(self, img, ndarray):  
         self.camera_image = img
 
-        self.sceneDisplayCamera.clear() 
-
-        self.sceneDisplayCamera.addPixmap(QPixmap.fromImage(img))
-
         if self.tracking_on:
             data = cam_tracker(ndarray)            
+            # UPDATE REDRESH
             self.shape.build(data[0], data[1], data[2], data[3], data[4])
+
+            # DRAW RECT/POINTS INDICATOR
             self.draw_shape()
 
+            # REFRESH MID COLOR
+            self.midColor = data[5]
+            # CALCULATE MIN AND MAX RGB
+            self.calculate_and_display_color_range()
+            
+            # MOVE SERVOS BASE ON THE ITEM POSITION
             if self.servo_tracking:
                 self.calc_shape_position()
+        
+        self.sceneDisplayCamera.clear() 
+        self.sceneDisplayCamera.addPixmap(QPixmap.fromImage(self.camera_image))
           
     def cameraMoveFromPlayer_X(self, isUp):
         if isUp:
@@ -160,13 +175,13 @@ class Main_gui(QMainWindow):
 
     # COLOR PICKER CONNECTION
     def color_clicked(self, x, y):
-        pix = QPixmap(self.labelColorMID.size())
+        # SET COLOR
         pixel = self.camera_image.pixelColor(x, y)
-        pix.fill(QColor(pixel.red(), pixel.green(), pixel.blue()))        
-        new_pos(x, y, (pixel.red(), pixel.green(), pixel.blue()), self.range_color)  
+        self.midColor = [pixel.red(), pixel.green(), pixel.blue()]
+        self.calculate_and_display_color_range()
 
-        self.labelColorMID.setPixmap(pix)
-        self.calculate_and_display_color_range([pixel.red(), pixel.green(), pixel.blue()])
+        # START TRACKING 
+        new_pos(x, y, (pixel.red(), pixel.green(), pixel.blue()), self.range_color) 
 
         self.tracking_on = True
 
@@ -182,13 +197,15 @@ class Main_gui(QMainWindow):
     def color_leaved(self): 
         self.labelColorHover.clear()
 
-    def calculate_and_display_color_range(self, RGB):
-        self.midColor = RGB
-
-        pix = QPixmap(self.labelColorMIN.size())
+    def calculate_and_display_color_range(self):
+        # SET MID COLOR
+        pix = QPixmap(self.labelColorMID.size())
+        
+        pix.fill(QColor(self.midColor[0], self.midColor[1], self.midColor[2]))        
+        self.labelColorMID.setPixmap(pix)
 
         # SET MIN COLOR
-        color = [RGB[0] - self.range_color, RGB[1] - self.range_color, RGB[2] - self.range_color]
+        color = [self.midColor[0] - self.range_color, self.midColor[1] - self.range_color, self.midColor[2] - self.range_color]
         for it in color:
             if it < 0:
                 it = 0
@@ -197,7 +214,7 @@ class Main_gui(QMainWindow):
         self.labelColorMIN.setPixmap(pix)
 
         # SET MAX COLOR
-        color = [RGB[0] + self.range_color, RGB[1] + self.range_color, RGB[2] + self.range_color]
+        color = [self.midColor[0] + self.range_color, self.midColor[1] + self.range_color, self.midColor[2] + self.range_color]
         for it in color:
             if it > 255:
                 it = 255
@@ -206,29 +223,31 @@ class Main_gui(QMainWindow):
         self.labelColorMAX.setPixmap(pix)
 
     def draw_shape(self):
-        color_points = QPen(QColor("#ffffff"))
-        color_points.setWidth(self.pen_size)
-        color_square = QPen(QColor("#ff0048"))
-        color_square.setWidth(self.pen_size)
-        color_middle = QPen(QColor("#0084ff"))
-        color_middle.setWidth(self.pen_size)
-        middle_width = 10
+        paint = QPainter(self.camera_image)
+        pen = QPen()
+        pen.setWidth(self.pen_size)
 
-        points = self.shape.points
-        for i in range(len(self.shape.points)):
-            self.sceneDisplayCamera.addLine(points[i][0] - self.pen_size, points[i][1], points[i][0] + self.pen_size, points[i][1], color_points)
-            self.sceneDisplayCamera.addLine(points[i][0], points[i][1] - self.pen_size, points[i][0], points[i][1] + self.pen_size, color_points)
-     
-        self.sceneDisplayCamera.addRect(self.shape.top_left[0], self.shape.top_left[1], self.shape.width, self.shape.height, color_square)
+        pen.setColor(QColor("#ff0048"))
+        paint.setPen(pen)
+        paint.drawRect(self.shape.top_left[0], self.shape.top_left[1], self.shape.width, self.shape.height)
+
+        pen.setColor(QColor("#ffffff"))
+        paint.setPen(pen)
+        for point in self.shape.points:
+            paint.drawPoint(point[0], point[1])
         
-        self.sceneDisplayCamera.addLine(self.shape.center[0] - middle_width, self.shape.center[1], self.shape.center[0] + middle_width, self.shape.center[1], color_middle)
-        self.sceneDisplayCamera.addLine(self.shape.center[0], self.shape.center[1] - middle_width, self.shape.center[0], self.shape.center[1] + middle_width, color_middle)
+        pen.setColor(QColor("#0084ff"))
+        paint.setPen(pen)
+        paint.drawPoint(self.shape.center[0], self.shape.center[1])
+
 
     def toggle_servo_tracking(self, state):
         if state == 2:
             self.servo_tracking = True        
         else:
             self.servo_tracking = False
+            self.servo_thread_x.run_servo = False
+            self.servo_thread_y.run_servo = False
 
     def calc_shape_position(self):
         render_size = self.camera_image.size()
@@ -285,3 +304,10 @@ class Main_gui(QMainWindow):
         x = -x
         self.servo_thread_x.callMovement(x)
         self.servo_thread_y.callMovement((position[1] - 32767.5) / 3276.7)
+
+    def update_color_range(self, slider_value):
+        self.range_color = slider_value
+        new_color_range(slider_value)
+
+        if not self.tracking_on:
+            self.calculate_and_display_color_range()

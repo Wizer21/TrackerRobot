@@ -191,3 +191,6 @@ QWidget {
     border-right: 4px solid #000000;
     border-bottom: 4px solid #000000;
   }
+  QGraphicsView {
+    border: 0px solid white;
+  }
