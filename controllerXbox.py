@@ -4,7 +4,7 @@ from PyQt5.QtCore import*
 from evdev import*
 
 class Communication(QObject):
-    motor_mouvement = pyqtSignal(str)
+    motor_move = pyqtSignal(list)
     motor_stop = pyqtSignal()
     servo_move = pyqtSignal(list)
     servo_stop = pyqtSignal()
@@ -21,14 +21,16 @@ class controllerXbox(QThread):
             print("NO CONTROLLER FOUND")
             return
 
+        self.joy1_y = 1
+        self.joy1_x = 0
+        self.joy1_position = [0, 0]
 
-        self.joy_y = 5
-        self.joy_x = 2
-        self.joy_position = [0, 0]
+        self.joy2_y = 5
+        self.joy2_x = 2
+        self.joy2_position = [0, 0]
+
         self.servo_position = [0, 0]
-
-        self.directionnal_button_x = 16
-        self.directionnal_button_y = 17
+        self.motor_position = [0, 0]
 
         self.null_min = int( 65535 / 2 ) - 3000
         self.null_max = int( 65535 / 2 ) + 3000
@@ -41,40 +43,37 @@ class controllerXbox(QThread):
             for event in self.gamepad.read_loop():
                 #JOYSTICK
                 if event.type == ecodes.EV_ABS: 
-                    # JOY 2
-                    if event.code == self.joy_x:            
-                        self.joy_position[0] = int(event.value)                  
+                    # JOY 2 SERVOS CONTROL
+                    if event.code == self.joy2_x:            
+                        self.joy2_position[0] = int(event.value)                  
                         if not self.null_min < event.value < self.null_max:
                             self.servo_position[0] = int(event.value)
                             self.messager.servo_move.emit(self.servo_position)
-                        elif self.null_min < self.joy_position[1] < self.null_max:
+                        elif self.null_min < self.joy2_position[1] < self.null_max:
                             self.messager.servo_stop.emit()
 
-                    elif event.code == self.joy_y: 
-                        self.joy_position[1] = int(event.value)  
+                    elif event.code == self.joy2_y: 
+                        self.joy2_position[1] = int(event.value)  
                         if not self.null_min < event.value < self.null_max:
                             self.servo_position[1] = int(event.value)
                             self.messager.servo_move.emit(self.servo_position)
-                        elif self.null_min < self.joy_position[0] < self.null_max:
+                        elif self.null_min < self.joy2_position[0] < self.null_max:
                             self.messager.servo_stop.emit()
 
-                    # DIRECTIONAL BUTTON AXIS Y
-                    elif event.code == self.directionnal_button_y:  
-                        pos = int(str(event.value).replace("L", ""))
-                        if pos > 0:
-                            self.messager.motor_mouvement.emit("back")
-                        elif pos < 0:
-                            self.messager.motor_mouvement.emit("front")
-                        elif pos == 0:
+                    # JOY 1 MOTOR CONTROL
+                    elif event.code == self.joy1_x:            
+                        self.joy1_position[0] = int(event.value)                  
+                        if not self.null_min < event.value < self.null_max:
+                            self.motor_position[0] = int(event.value)
+                            self.messager.motor_move.emit(self.motor_position)
+                        elif self.null_min < self.joy1_position[1] < self.null_max:
                             self.messager.motor_stop.emit()
 
-                    # DIRECTIONAL BUTTON AXIS X
-                    elif event.code == self.directionnal_button_x:
-                        pos = int(str(event.value).replace("L", ""))
-                        if pos > 0:
-                            self.messager.motor_mouvement.emit("right")
-                        elif pos < 0:
-                            self.messager.motor_mouvement.emit("left")
-                        elif pos == 0:
+                    elif event.code == self.joy1_y: 
+                        self.joy1_position[1] = int(event.value)  
+                        if not self.null_min < event.value < self.null_max:
+                            self.motor_position[1] = int(event.value)
+                            self.messager.motor_move.emit(self.motor_position)
+                        elif self.null_min < self.joy1_position[0] < self.null_max:
                             self.messager.motor_stop.emit()
     

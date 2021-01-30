@@ -2,13 +2,14 @@ from PyQt5.QtWidgets import*
 from PyQt5.QtGui import*
 from PyQt5.QtCore import*
 from Utils import*
+from pos_picker import*
 
 class Communication(QObject):
-    x_is_move_up = pyqtSignal(bool)
-    y_is_move_up = pyqtSignal(bool)
-    x_released = pyqtSignal()
-    y_released = pyqtSignal()
-    motor_move = pyqtSignal(str)
+    servo_x_move = pyqtSignal(float)
+    servo_y_move = pyqtSignal(float)
+    servo_x_released = pyqtSignal()
+    servo_y_released = pyqtSignal()
+    motor_move = pyqtSignal(list)
     motor_released = pyqtSignal()
 
 
@@ -16,105 +17,55 @@ class controlWidget(QWidget):
     def __init__(self, nparent):
         QWidget.__init__(self, parent = nparent)
         self.messager = Communication()
+        self.picker_size = 150
+        self.ratio_servo = self.picker_size / 10
+        self.ratio_motor = self.picker_size / 5
+        self.min_range = round((self.picker_size / 5) * 2)
+        self.max_range = round((self.picker_size / 5) * 3)
         
         # WIDGETS
         self.layoutMain = QGridLayout(self)
         self.labelServo = QLabel(self)
-        self.buttonUp = QPushButton(self)
-        self.buttonRight = QPushButton(self)
-        self.buttonBot = QPushButton(self)
-        self.buttonLeft = QPushButton(self)
+        self.picker_servo = pos_picker(self, [self.picker_size, self.picker_size])
 
         self.labelMotor = QLabel(self)
-        self.buttonUpMotor = QPushButton(self)
-        self.buttonRightMotor = QPushButton(self)
-        self.buttonBotMotor = QPushButton(self)
-        self.buttonLeftMotor = QPushButton(self)
-
-        self.buttonUpMotor.setObjectName("front")
-        self.buttonRightMotor.setObjectName("right")
-        self.buttonBotMotor.setObjectName("back")
-        self.buttonLeftMotor.setObjectName("left")
+        self.picker_motor = pos_picker(self, [self.picker_size, self.picker_size])
         
         # UI
         self.setLayout(self.layoutMain)
         self.layoutMain.addWidget(self.labelServo, 0, 0)
-        self.layoutMain.addWidget(self.buttonUp, 0, 1)
-        self.layoutMain.addWidget(self.buttonRight, 1, 2)
-        self.layoutMain.addWidget(self.buttonBot, 1, 1)
-        self.layoutMain.addWidget(self.buttonLeft, 1, 0)
+        self.layoutMain.addWidget(self.picker_servo, 1, 0)
         
         self.layoutMain.addWidget(self.labelMotor, 2, 0)
-        self.layoutMain.addWidget(self.buttonUpMotor, 2, 1)
-        self.layoutMain.addWidget(self.buttonRightMotor, 3, 2)
-        self.layoutMain.addWidget(self.buttonBotMotor, 3, 1)
-        self.layoutMain.addWidget(self.buttonLeftMotor, 3, 0)
+        self.layoutMain.addWidget(self.picker_motor, 3, 0)
 
         # PARAMETERS 
         self.labelServo.setPixmap(Utils.get_pixmap("camera"))
-        Utils.set_icon(self.buttonUp, "up", 1)
-        Utils.set_icon(self.buttonRight, "right", 1)
-        Utils.set_icon(self.buttonBot, "down", 1)
-        Utils.set_icon(self.buttonLeft, "left", 1)
+        self.labelMotor.setPixmap(Utils.get_pixmap("engine")) 
 
-        self.labelMotor.setPixmap(Utils.get_pixmap("engine"))
-        Utils.set_icon(self.buttonUpMotor, "up", 1)
-        Utils.set_icon(self.buttonRightMotor, "right", 1)
-        Utils.set_icon(self.buttonBotMotor, "down", 1)
-        Utils.set_icon(self.buttonLeftMotor, "left", 1)
+        self.picker_servo.messager.pos_selected.connect(self.servo_picker_move)
+        self.picker_servo.messager.pos_leaved.connect(self.servo_picker_released)
+        self.picker_motor.messager.pos_selected.connect(self.motor_picker_move)
+        self.picker_motor.messager.pos_leaved.connect(self.motor_picker_released)
 
-        self.buttonUp.setCursor(Qt.PointingHandCursor)
-        self.buttonRight.setCursor(Qt.PointingHandCursor)
-        self.buttonBot.setCursor(Qt.PointingHandCursor)
-        self.buttonLeft.setCursor(Qt.PointingHandCursor)
-        self.buttonUpMotor.setCursor(Qt.PointingHandCursor)
-        self.buttonRightMotor.setCursor(Qt.PointingHandCursor)
-        self.buttonBotMotor.setCursor(Qt.PointingHandCursor)
-        self.buttonLeftMotor.setCursor(Qt.PointingHandCursor)
-
-        # CONNECTIONS
-        ## SERVOS PRESSED
-        self.buttonUp.pressed.connect(self.sendUp)
-        self.buttonRight.pressed.connect(self.sendRight)
-        self.buttonBot.pressed.connect(self.sendDown)
-        self.buttonLeft.pressed.connect(self.sendLeft)
-
-        self.buttonUp.released.connect(self.y_servo_released)
-        self.buttonRight.released.connect(self.x_servo_released)
-        self.buttonBot.released.connect(self.y_servo_released)
-        self.buttonLeft.released.connect(self.x_servo_released)
-
-        ## MOTOR PRESSED
-        self.buttonUpMotor.pressed.connect(self.motor_movement)
-        self.buttonRightMotor.pressed.connect(self.motor_movement)
-        self.buttonBotMotor.pressed.connect(self.motor_movement)
-        self.buttonLeftMotor.pressed.connect(self.motor_movement)
-        # MOTOR RELEASED
-        self.buttonUpMotor.released.connect(self.released_motor)
-        self.buttonRightMotor.released.connect(self.released_motor)
-        self.buttonBotMotor.released.connect(self.released_motor)
-        self.buttonLeftMotor.released.connect(self.released_motor)
-    
-    def sendUp(self):
-        self.messager.y_is_move_up.emit(False)
-
-    def sendDown(self):
-        self.messager.y_is_move_up.emit(True)
-
-    def sendRight(self):
-        self.messager.x_is_move_up.emit(False)
-
-    def sendLeft(self):
-        self.messager.x_is_move_up.emit(True)
-
-    def motor_movement(self):
-        self.messager.motor_move.emit(self.sender().objectName())
-
-    def released_motor(self):
-        self.messager.motor_released.emit()
         
-    def x_servo_released(self):
-        self.messager.x_released.emit()
+    def servo_picker_move(self, x, y):
+        if self.min_range < x < self.max_range:
+            self.messager.servo_x_released.emit()
+        else:
+            self.messager.servo_x_move.emit(-((x - (self.picker_size / 2)) / self.ratio_servo))
+        
+        if self.min_range < y < self.max_range:
+            self.messager.servo_y_released.emit()
+        else:
+            self.messager.servo_y_move.emit(-((y - (self.picker_size / 2)) / self.ratio_servo))
 
-    def y_servo_released(self):
-        self.messager.y_released.emit()
+    def servo_picker_released(self):
+        self.messager.servo_x_released.emit()
+        self.messager.servo_y_released.emit()
+
+    def motor_picker_move(self, position):
+        self.messager.motor_move.emit([round(-(position[0] - (self.picker_size / 2)) / self.ratio_motor), round((position[1] - (self.picker_size / 2)) / self.ratio_motor)])
+
+    def motor_picker_released(self):
+        self.messager.motor_released.emit()

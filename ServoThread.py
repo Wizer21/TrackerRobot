@@ -49,8 +49,8 @@ class ServoThread(QThread):
             print("DANGER " + str(newpos))
             return False
 
-        if not self.isRunning():
-            print("in " + str(value))
+        if not self.run_servo:
+            print("in ")
             self.run_servo = True
             self.start() 
         return True
@@ -58,8 +58,9 @@ class ServoThread(QThread):
     def callMovement(self, value):     
         self.action = value
 
-        self.run_servo = True
-        self.start() 
+        if not self.run_servo:
+            self.run_servo = True
+            self.start()
         
     def run(self):      
         while self.run_servo:
@@ -70,7 +71,6 @@ class ServoThread(QThread):
   
             self.pi.set_servo_pulsewidth(self.controlPin, newpos)   
             sleep(0.01)  
-            print("pos " + str(newpos))
 
             self.positionServo = newpos 
 

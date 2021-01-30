@@ -97,18 +97,18 @@ class Main_gui(QMainWindow):
         Utils.resize_font(self.check_servo_tracking, 1.5)
 
         # SERVOS
-        self.widgetControl.messager.x_is_move_up.connect(self.cameraMoveFromPlayer_X)
-        self.widgetControl.messager.y_is_move_up.connect(self.cameraMoveFromPlayer_Y)
-        self.widgetControl.messager.x_released.connect(self.x_motor_stop)
-        self.widgetControl.messager.y_released.connect(self.y_motor_stop)
+        self.widgetControl.messager.servo_x_move.connect(self.camera_move_x_from_widget)
+        self.widgetControl.messager.servo_y_move.connect(self.camera_move_y_from_widget)
+        self.widgetControl.messager.servo_x_released.connect(self.camera_stop_x_from_widget)
+        self.widgetControl.messager.servo_y_released.connect(self.camera_stop_y_from_widget)
         self.controller_xbox.messager.servo_move.connect(self.servos_move_controller)
         self.controller_xbox.messager.servo_stop.connect(self.x_motor_stop)
         self.controller_xbox.messager.servo_stop.connect(self.y_motor_stop)
 
         # MOTOR
-        self.widgetControl.messager.motor_move.connect(self.moveRobot)
-        self.widgetControl.messager.motor_released.connect(self.stop_motor)
-        self.controller_xbox.messager.motor_mouvement.connect(self.moveRobot)
+        self.widgetControl.messager.motor_move.connect(self.motor_move_from_widget)
+        self.widgetControl.messager.motor_released.connect(self.motor_leaved_from_widget)
+        self.controller_xbox.messager.motor_move.connect(self.moveRobot)
         self.controller_xbox.messager.motor_stop.connect(self.stop_motor)
 
         # CAMERA 
@@ -160,18 +160,24 @@ class Main_gui(QMainWindow):
         self.sceneDisplayCamera.clear() 
         self.sceneDisplayCamera.addPixmap(QPixmap.fromImage(self.camera_image))
           
-    def cameraMoveFromPlayer_X(self, isUp):
-        if isUp:
-            self.servo_thread_x.quick_movement(5)
-        else:
-            self.servo_thread_x.quick_movement(-5)
+    def camera_move_x_from_widget(self, position):
+        self.servo_thread_x.callMovement(position)
 
-    def cameraMoveFromPlayer_Y(self, isUp):
-        if isUp:
-            self.servo_thread_y.quick_movement(5)
-        else:
-            self.servo_thread_y.quick_movement(-5)
+    def camera_move_y_from_widget(self, position):
+        self.servo_thread_x.callMovement(position)
 
+    def camera_stop_x_from_widget(self):
+        self.servo_thread_x.run_servo = False
+
+    def camera_stop_y_from_widget(self):
+        self.servo_thread_y.run_servo = False
+              
+    def motor_move_from_widget(self, position):
+        self.servo_thread_x.callMovement(position[0])
+        self.servo_thread_y.callMovement(position[1])
+
+    def motor_leaved_from_widget(self):
+        self.motor_thread.run_motor = False
 
     # COLOR PICKER CONNECTION
     def color_clicked(self, x, y):
@@ -239,6 +245,7 @@ class Main_gui(QMainWindow):
         pen.setColor(QColor("#0084ff"))
         paint.setPen(pen)
         paint.drawPoint(self.shape.center[0], self.shape.center[1])
+        paint.end()
 
 
     def toggle_servo_tracking(self, state):
@@ -287,8 +294,8 @@ class Main_gui(QMainWindow):
             
         self.heatTimer.start(1000)
         
-    def moveRobot(self, move):
-        self.motor_thread.callMovement(move)
+    def moveRobot(self, position):
+        self.motor_thread.callMovement([round((position[0] - 32767.5) / 262.14), round((position[1] - 32767.5) / 262.14)])
 
     def stop_motor(self):
         self.motor_thread.run_motor = False

@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import*
 from PyQt5.QtGui import*
 from PyQt5.QtCore import*
-import RPi.GPIO as GPIO # general-purpose input/output
+import pigpio
 from time import sleep 
 
 class MotorThread(QThread):
@@ -22,14 +22,7 @@ class MotorThread(QThread):
             "left": [[self.left_up, 0], [self.left_down, 1],[self.right_up, 1], [self.right_down, 0]]
         }
 
-        GPIO.setmode(GPIO.BCM) # SERVO MOTOR
-        # MOTOR RIGHT
-        GPIO.setup(self.right_up, GPIO.OUT) # FORWARD
-        GPIO.setup(self.right_down, GPIO.OUT) # BACKWARD
-
-        # MOTOR LEFT
-        GPIO.setup(self.left_down, GPIO.OUT) # BACKWARD
-        GPIO.setup(self.left_up, GPIO.OUT) # FORWARD
+        self.pi = pigpio.pi()
 
         # STOP MOTOR
         self.cut_motor()
@@ -40,27 +33,49 @@ class MotorThread(QThread):
         self.start()
        
     def cut_motor(self):
-        GPIO.output(self.right_up, 0)
-        GPIO.output(self.right_down, 0)
-        GPIO.output(self.left_up, 0)
-        GPIO.output(self.left_down, 0)
+        self.pi.write(self.right_up, 0)
+        self.pi.write(self.right_down, 0)
+        self.pi.write(self.left_up, 0)
+        self.pi.write(self.left_down, 0)
 
     def callMovement(self, movement):
-        self.instructions = self.moveList[movement]
-        self.run_motor = True
-        self.start()
+        l_up = 0
+        l_dw = 0
+        r_up = 0
+        r_dw = 0
+
+        if movement[1] >= 0:        
+            l_dw = 125 + movement[1]
+            r_dw = 125 + movement[1]
+            if movement[0] >= 0:
+                r_dw -= movement[0]
+            else:
+                l_dw -= -movement[0]
+        else:
+            l_up = 125 + -movement[1]
+            r_up = 125 + -movement[1]
+            if movement[0] >= 0:
+                r_up -= movement[0]
+            else:
+                l_up -= -movement[0]
+        
+        self.instructions = [[self.left_up, l_up], [self.left_down, l_dw], [self.right_up, r_up], [self.right_down, r_dw]] 
+
+        if not self.run_motor:
+            self.run_motor = True
+            self.start()
         
     def run(self):       
         if self.quick:
             for move in self.instructions:
-                GPIO.output(move[0], move[1])
+                self.pi.write(move[0], move[1])
             sleep(0.05)
             self.quick = False
-        else:       
-            for move in self.instructions:
-                GPIO.output(move[0], move[1])
-            while self.run_motor:
-                sleep(0.2)
+        else:     
+            while self.run_motor: 
+                for move in self.instructions:
+                    self.pi.set_PWM_dutycycle(move[0], move[1])
+                sleep(0.05)
        
         self.cut_motor()
 
