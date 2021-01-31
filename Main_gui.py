@@ -110,6 +110,7 @@ class Main_gui(QMainWindow):
         self.widgetControl.messager.motor_released.connect(self.motor_leaved_from_widget)
         self.controller_xbox.messager.motor_move.connect(self.moveRobot)
         self.controller_xbox.messager.motor_stop.connect(self.stop_motor)
+        self.controller_xbox.messager.speed_set.connect(self.set_motor_speed)
 
         # CAMERA 
         self.thread_camera.messager.cameraImages.connect(self.display_camera)
@@ -164,7 +165,8 @@ class Main_gui(QMainWindow):
         self.servo_thread_x.callMovement(position)
 
     def camera_move_y_from_widget(self, position):
-        self.servo_thread_x.callMovement(position)
+        print("y " + str(position))
+        self.servo_thread_y.callMovement(-position)
 
     def camera_stop_x_from_widget(self):
         self.servo_thread_x.run_servo = False
@@ -173,8 +175,14 @@ class Main_gui(QMainWindow):
         self.servo_thread_y.run_servo = False
               
     def motor_move_from_widget(self, position):
-        self.servo_thread_x.callMovement(position[0])
-        self.servo_thread_y.callMovement(position[1])
+        if position[1] > 0:
+            is_forward = True
+            self.motor_thread.motor_speed = round(position[1] / 1.25)
+        else:
+            is_forward = False
+            self.motor_thread.motor_speed = -round(position[1] / 1.25)
+
+        self.motor_thread.callMovement(position[0], is_forward)
 
     def motor_leaved_from_widget(self):
         self.motor_thread.run_motor = False
@@ -295,9 +303,15 @@ class Main_gui(QMainWindow):
         self.heatTimer.start(1000)
         
     def moveRobot(self, position):
-        self.motor_thread.callMovement([round((position[0] - 32767.5) / 262.14), round((position[1] - 32767.5) / 262.14)])
+        if position[1] < 32767.5:
+            is_forward = True
+        else:
+            is_forward = False
+
+        self.motor_thread.callMovement(round((position[0] - 32767.5) / 262.14), is_forward)
 
     def stop_motor(self):
+        self.motor_speed = 0
         self.motor_thread.run_motor = False
 
     def x_motor_stop(self):
@@ -318,3 +332,6 @@ class Main_gui(QMainWindow):
 
         if not self.tracking_on:
             self.calculate_and_display_color_range()
+
+    def set_motor_speed(self, value):
+        self.motor_thread.update_speed(round(value / 10.23))

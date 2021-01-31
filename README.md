@@ -13,8 +13,8 @@ At the end this robot will be able to follow moving shapes.
 ## Programmatical part
 - Python
 - Qt for the GUI
-- Open Cv to access pixels map of the Pi Camera
-- RPi.GPIO for the pin control
+- Open Cv, cv2 to access pixels map of the Pi Camera
+- Pigpio for the pin control
 
 Come see it moving on [youtube](https://www.youtube.com/watch?v=CWhhGOI1N1g) ! :dancer:
 

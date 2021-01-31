@@ -18,8 +18,8 @@ class controlWidget(QWidget):
         QWidget.__init__(self, parent = nparent)
         self.messager = Communication()
         self.picker_size = 150
-        self.ratio_servo = self.picker_size / 10
-        self.ratio_motor = self.picker_size / 5
+        self.ratio_servo = (self.picker_size / 2) / 10
+        self.ratio_motor = (self.picker_size / 2) / 125
         self.min_range = round((self.picker_size / 5) * 2)
         self.max_range = round((self.picker_size / 5) * 3)
         
@@ -64,8 +64,14 @@ class controlWidget(QWidget):
         self.messager.servo_x_released.emit()
         self.messager.servo_y_released.emit()
 
-    def motor_picker_move(self, position):
-        self.messager.motor_move.emit([round(-(position[0] - (self.picker_size / 2)) / self.ratio_motor), round((position[1] - (self.picker_size / 2)) / self.ratio_motor)])
+    def motor_picker_move(self, x, y):
+        if self.min_range < x < self.max_range:
+            x = self.picker_size / 2
+        
+        if self.min_range < y < self.max_range:
+            y = self.picker_size / 2
+
+        self.messager.motor_move.emit([round(-(x - (self.picker_size / 2)) / self.ratio_motor), round((y - (self.picker_size / 2)) / self.ratio_motor)])
 
     def motor_picker_released(self):
         self.messager.motor_released.emit()

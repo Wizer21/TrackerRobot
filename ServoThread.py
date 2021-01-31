@@ -59,6 +59,7 @@ class ServoThread(QThread):
         self.action = value
 
         if not self.run_servo:
+            
             self.run_servo = True
             self.start()
         

@@ -7,16 +7,17 @@ class Communication(QObject):
     pos_leaved = pyqtSignal()
 
 class pos_picker(QLabel):
-    def __init__(self, new_parent, size):
+    def __init__(self, new_parent, new_size):
         QLabel.__init__(self, new_parent)
+        self.size = new_size
         self.messager = Communication()
-        self.setFixedSize(QSize(size[0], size[1]))
+        self.setFixedSize(QSize(new_size[0], new_size[1]))
         self.setMouseTracking(True)
         self.setCursor(Qt.PointingHandCursor)   
 
-        part = round(size[0]/5)
+        part = round(new_size[0]/5)
 
-        img = QImage(size[0], size[1], QImage.Format_RGB32)
+        img = QImage(new_size[0], new_size[1], QImage.Format_RGB32)
         img.fill(QColor("#bdbdbd"))
 
         paint = QPainter(img)
@@ -25,8 +26,8 @@ class pos_picker(QLabel):
         pen.setColor(QColor("#9e9e9e"))
         paint.setPen(pen)
 
-        paint.drawLine(int(part * 2.5), 0, int(part * 2.5), size[1])
-        paint.drawLine(0, int(part * 2.5), size[0], int(part * 2.5))
+        paint.drawLine(int(part * 2.5), 0, int(part * 2.5), new_size[1])
+        paint.drawLine(0, int(part * 2.5), new_size[0], int(part * 2.5))
         
         self.setPixmap(QPixmap.fromImage(img))
         paint.end()
@@ -43,7 +44,10 @@ class pos_picker(QLabel):
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.LeftButton:
-            self.messager.pos_selected.emit(event.pos().x(), event.pos().y())
+            if not 0 < event.pos().x() < self.size[0] or not 0 < event.pos().y() < self.size[1]:
+                self.messager.pos_leaved.emit()
+            else:
+                self.messager.pos_selected.emit(event.pos().x(), event.pos().y())
 
-    def releaseMouse(self, event):
+    def mouseReleaseEvent(self, event):
         self.messager.pos_leaved.emit()

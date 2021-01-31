@@ -8,6 +8,7 @@ class Communication(QObject):
     motor_stop = pyqtSignal()
     servo_move = pyqtSignal(list)
     servo_stop = pyqtSignal()
+    speed_set = pyqtSignal(int)
 
 class controllerXbox(QThread):
     def __init__(self):
@@ -29,8 +30,9 @@ class controllerXbox(QThread):
         self.joy2_x = 2
         self.joy2_position = [0, 0]
 
+        self.rt = 9
+
         self.servo_position = [0, 0]
-        self.motor_position = [0, 0]
 
         self.null_min = int( 65535 / 2 ) - 3000
         self.null_max = int( 65535 / 2 ) + 3000
@@ -62,18 +64,22 @@ class controllerXbox(QThread):
 
                     # JOY 1 MOTOR CONTROL
                     elif event.code == self.joy1_x:            
-                        self.joy1_position[0] = int(event.value)                  
-                        if not self.null_min < event.value < self.null_max:
-                            self.motor_position[0] = int(event.value)
-                            self.messager.motor_move.emit(self.motor_position)
-                        elif self.null_min < self.joy1_position[1] < self.null_max:
+                        self.joy1_position[0] = int(event.value)  
+                        if self.null_min < self.joy1_position[1] < self.null_max and self.null_min < event.value < self.null_max:
                             self.messager.motor_stop.emit()
+                        else:
+                            self.joy1_position[0] = int(event.value)
+                            self.messager.motor_move.emit(self.joy1_position)
 
                     elif event.code == self.joy1_y: 
                         self.joy1_position[1] = int(event.value)  
-                        if not self.null_min < event.value < self.null_max:
-                            self.motor_position[1] = int(event.value)
-                            self.messager.motor_move.emit(self.motor_position)
-                        elif self.null_min < self.joy1_position[0] < self.null_max:
+                        if self.null_min < self.joy1_position[0] < self.null_max and self.null_min < event.value < self.null_max:
                             self.messager.motor_stop.emit()
+                        else:
+                            self.joy1_position[1] = int(event.value)
+                            self.messager.motor_move.emit(self.joy1_position)
+                        
+                    
+                    elif event.code == self.rt:
+                        self.messager.speed_set.emit(event.value)
     
