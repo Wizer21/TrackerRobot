@@ -26,7 +26,7 @@ if __name__ == "__main__":
     # SET UP DEFAULT SIZE IN Utils
     uti = Utils(font_size, resolution)
 
-    gui = Main_gui()
+    gui = Main_gui() 
     gui.show()
 
     sys.exit(app.exec_())

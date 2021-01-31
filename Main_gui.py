@@ -12,6 +12,7 @@ import os
 from MotorThread import*
 from controllerXbox import*
 from Utils import*
+from slider_jump import*
 
 
 class Main_gui(QMainWindow):
@@ -40,12 +41,12 @@ class Main_gui(QMainWindow):
         self.layoutPanel = QGridLayout(self)
 
         self.layoutColor = QGridLayout(self)
-        self.labelColorTitle = QLabel("Color", self)
+        self.labelColorTitle = QLabel("Tracker Color", self)
         self.labelColorHover = QLabel(self)
         self.labelColorMIN = QLabel(self)
         self.labelColorMID = QLabel(self)
         self.labelColorMAX = QLabel(self)
-        self.sliderColorRange = QSlider(self)
+        self.sliderColorRange = slider_jump()
 
         self.widgetControl = controlWidget(self)
 
@@ -56,9 +57,10 @@ class Main_gui(QMainWindow):
 
         self.build()
         self.run_camera()
-        self.resize(700, 700)
+        Utils.resize_window_from_resolution(self, 0.5, 0.5)
         self.heatTimer.start(1000)
         self.calculate_and_display_color_range()
+
 
 
     def build(self):
@@ -88,13 +90,24 @@ class Main_gui(QMainWindow):
         self.sliderColorRange.setOrientation(Qt.Horizontal)
         self.sliderColorRange.setValue(self.range_color)
         self.sliderColorRange.setRange(0, 50)
+        self.sliderColorRange.setPageStep(1)
         self.viewDisplayCamera.setScene(self.sceneDisplayCamera)
         self.label_icon_pi.setPixmap(Utils.get_resized_pixmap("pi", 0.8))
-        self.layoutPanel.setAlignment(Qt.AlignTop)
+        self.layoutPanel.setAlignment(Qt.AlignTop and Qt.AlignLeft)
         self.layoutPanel.setColumnStretch(0, 0)
         self.layoutPanel.setColumnStretch(1, 1)
         Utils.resize_font(self.label_heat, 2)
         Utils.resize_font(self.check_servo_tracking, 1.5)
+        Utils.resize_font(self.labelColorTitle, 1.5)
+        self.check_servo_tracking.setCursor(Qt.PointingHandCursor)
+        
+        self.layoutColor.setAlignment(Qt.AlignTop and Qt.AlignLeft)
+        self.layoutColor.setContentsMargins(0, 0, 0, 0)
+        self.layoutColor.setSpacing(0)
+        Utils.fixedsize_from_resolution(self.labelColorMIN, 0.04, 0.04)
+        Utils.fixedsize_from_resolution(self.labelColorMID, 0.04, 0.04)
+        Utils.fixedsize_from_resolution(self.labelColorMAX, 0.04, 0.04)
+        self.labelColorHover.setFixedSize(round(self.labelColorMIN.size().width() * 3), round(self.labelColorMIN.size().height() * 0.7))
 
         # SERVOS
         self.widgetControl.messager.servo_x_move.connect(self.camera_move_x_from_widget)
@@ -184,10 +197,6 @@ class Main_gui(QMainWindow):
             is_forward = True
             self.motor_thread.motor_speed = 100
 
-
-        print("MOTOR SPEED " + str(self.motor_thread.motor_speed))
-        print("ORIENTATION " + str(position[0]))
-        print("MAIN GUI rotation " + str(position[0]) + " " + str(is_forward))
         self.motor_thread.callMovement(-position[0], is_forward)
 
     def motor_leaved_from_widget(self):
@@ -207,11 +216,24 @@ class Main_gui(QMainWindow):
 
     # COLOR PICKER CONNECTION
     def color_hover(self, x, y):
-        test = 0
-        # pix = QPixmap(self.labelColorMID.size())
-        # pixel = self.camera_image.pixelColor(x, y)        
-        # pix.fill(QColor(pixel.red(), pixel.green(), pixel.blue()))     
-        # self.labelColorHover.setPixmap(pix)
+        return
+        print("IN COLOR HOVER")
+        pix = QPixmap(self.labelColorHover.size())
+        print("CREATED PIXMAP")
+        img_size = [self.camera_image.height(), self.camera_image.width()]
+
+        if 0 <= x <= img_size[0] and 0 <= y <= img_size[1]:  
+            print("IN IF")      
+            pixel = self.camera_image.pixelColor(x, y) 
+
+            print("GETTED PIXEL")       
+            pix.fill(QColor(pixel.red(), pixel.green(), pixel.blue()))     
+            print("color fill passed")
+            self.labelColorHover.setPixmap(pix)
+            print("setpixmap passed")
+            print("END COLOR HOVER")
+        else:
+            print("OUT CATCHED -------------------------------------")
 
     # COLOR PICKER CONNECTION
     def color_leaved(self): 
@@ -300,6 +322,10 @@ class Main_gui(QMainWindow):
         val = val.replace("'", "")
         val = float(val[:-1])
 
+        output = output.replace("'", "")
+        output = output.replace("\n", "")
+        output += "°"
+        
         self.label_heat.setText(output[5:])
         if val >= 75:
             Utils.resize_and_color_font(self.label_heat, 2, "#d32f2f")

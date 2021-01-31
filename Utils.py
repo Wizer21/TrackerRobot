@@ -51,8 +51,12 @@ class Utils:
         widget.setStyleSheet("font-size: {0}px; color: {1}; font: bold;".format(int(pixelsize * value), color))
 
     @staticmethod
-    def resize_from_resolution(window, ratio_w, ratio_h):
+    def resize_window_from_resolution(window, ratio_w, ratio_h):
         window.resize(int(resolution[0] * ratio_w), int(resolution[1] * ratio_h))
+    
+    @staticmethod
+    def fixedsize_from_resolution(window, ratio_w, ratio_h):
+        window.setFixedSize(int(resolution[0] * ratio_w), int(resolution[1] * ratio_h))
 
 
 

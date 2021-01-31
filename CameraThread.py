@@ -31,6 +31,6 @@ class CameraThread(QThread):
             if ret:
                 cv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 height, width, channel = cv_image.shape
-                bytesPerLine = 3 * width
+                bytesPerLine = channel * width
                 self.messager.cameraImages.emit(QImage(cv_image.data, width, height, bytesPerLine, QImage.Format_RGB888), cv_image) # FRAGMENTATION ERROR
                 #self.messager.cameraImages.emit(QImage(cv_image.data, width, height, bytesPerLine, QImage.Format_RGB888).rgbSwapped(), cv_image) # ORANGE IS BLUE

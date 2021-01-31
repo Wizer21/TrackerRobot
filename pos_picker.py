@@ -15,9 +15,16 @@ class pos_picker(QLabel):
         self.setMouseTracking(True)
         self.setCursor(Qt.PointingHandCursor)   
 
-        part = round(new_size[0]/5)
+        self.cursor_off = QCursor()
+        self.cursor_on = QCursor()
 
-        img = QImage(new_size[0], new_size[1], QImage.Format_RGB32)
+        self.draw_background()
+        self.draw_cursor()
+
+    def draw_background(self):        
+        part = round(self.size[0]/5)
+
+        img = QImage(self.size[0], self.size[1], QImage.Format_RGB32)
         img.fill(QColor("#212121"))
 
         paint = QPainter(img)
@@ -26,14 +33,47 @@ class pos_picker(QLabel):
         pen.setColor(QColor("#262626"))
         paint.setPen(pen)
 
-        paint.drawLine(int(part * 2.5), 0, int(part * 2.5), new_size[1])
-        paint.drawLine(0, int(part * 2.5), new_size[0], int(part * 2.5))
+        paint.drawLine(int(part * 2.5), 0, int(part * 2.5), self.size[1])
+        paint.drawLine(0, int(part * 2.5), self.size[0], int(part * 2.5))
         
-        self.setPixmap(QPixmap.fromImage(img))
         paint.end()
+        self.setPixmap(QPixmap.fromImage(img))
+
+    def draw_cursor(self):
+        cursor_size = round(self.size[0] / 14)
+        img_off = QImage(cursor_size, cursor_size, QImage.Format_ARGB32)
+        img_on = QImage(cursor_size, cursor_size, QImage.Format_ARGB32)
+        img_off.fill(Qt.transparent)
+        img_on.fill(Qt.transparent)
+        
+        mid = round(cursor_size / 2)
+
+        painter_on = QPainter(img_on)
+        painter_off = QPainter(img_off)
+
+        pen_on = QPen()
+        pen_off = QPen()
+        pen_on.setWidth(cursor_size)
+        pen_off.setWidth(cursor_size)
+        pen_on.setColor(QColor("#d32f2f"))
+        pen_off.setColor(QColor("#616161"))
+        pen_on.setCapStyle(Qt.RoundCap)
+        pen_off.setCapStyle(Qt.RoundCap)
+
+        painter_on.setPen(pen_on)
+        painter_off.setPen(pen_off)
+
+        painter_on.drawPoint(mid, mid)
+        painter_off.drawPoint(mid, mid)
+
+        painter_on.end()
+        painter_off.end()
+
+        self.cursor_on = QCursor(QPixmap.fromImage(img_on), cursor_size, cursor_size)
+        self.cursor_off = QCursor(QPixmap.fromImage(img_off), cursor_size, cursor_size)
 
     def enterEvent(self, event):
-        test = 0
+        self.setCursor(self.cursor_off)
 
     def leaveEvent(self, event):
         self.messager.pos_leaved.emit()
@@ -41,6 +81,7 @@ class pos_picker(QLabel):
     def mousePressEvent(self, event):
         if event.buttons() == Qt.LeftButton:
             self.messager.pos_selected.emit(event.pos().x(), event.pos().y())
+            self.setCursor(self.cursor_on)
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.LeftButton:
@@ -48,6 +89,8 @@ class pos_picker(QLabel):
                 self.messager.pos_leaved.emit()
             else:
                 self.messager.pos_selected.emit(event.pos().x(), event.pos().y())
+                self.setCursor(self.cursor_on)
 
     def mouseReleaseEvent(self, event):
         self.messager.pos_leaved.emit()
+        self.setCursor(self.cursor_off)
