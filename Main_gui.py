@@ -165,7 +165,6 @@ class Main_gui(QMainWindow):
         self.servo_thread_x.callMovement(position)
 
     def camera_move_y_from_widget(self, position):
-        print("y " + str(position))
         self.servo_thread_y.callMovement(-position)
 
     def camera_stop_x_from_widget(self):
@@ -176,13 +175,20 @@ class Main_gui(QMainWindow):
               
     def motor_move_from_widget(self, position):
         if position[1] > 0:
-            is_forward = True
-            self.motor_thread.motor_speed = round(position[1] / 1.25)
-        else:
             is_forward = False
+            self.motor_thread.motor_speed = round(position[1] / 1.25)
+        elif position[1] < 0:
+            is_forward = True
             self.motor_thread.motor_speed = -round(position[1] / 1.25)
+        else:
+            is_forward = True
+            self.motor_thread.motor_speed = 100
 
-        self.motor_thread.callMovement(position[0], is_forward)
+
+        print("MOTOR SPEED " + str(self.motor_thread.motor_speed))
+        print("ORIENTATION " + str(position[0]))
+        print("MAIN GUI rotation " + str(position[0]) + " " + str(is_forward))
+        self.motor_thread.callMovement(-position[0], is_forward)
 
     def motor_leaved_from_widget(self):
         self.motor_thread.run_motor = False

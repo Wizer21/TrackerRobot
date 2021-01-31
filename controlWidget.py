@@ -17,7 +17,7 @@ class controlWidget(QWidget):
     def __init__(self, nparent):
         QWidget.__init__(self, parent = nparent)
         self.messager = Communication()
-        self.picker_size = 150
+        self.picker_size = 200
         self.ratio_servo = (self.picker_size / 2) / 10
         self.ratio_motor = (self.picker_size / 2) / 125
         self.min_range = round((self.picker_size / 5) * 2)

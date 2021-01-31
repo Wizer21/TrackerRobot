@@ -18,12 +18,12 @@ class pos_picker(QLabel):
         part = round(new_size[0]/5)
 
         img = QImage(new_size[0], new_size[1], QImage.Format_RGB32)
-        img.fill(QColor("#bdbdbd"))
+        img.fill(QColor("#212121"))
 
         paint = QPainter(img)
         pen = QPen()
         pen.setWidth(part)
-        pen.setColor(QColor("#9e9e9e"))
+        pen.setColor(QColor("#262626"))
         paint.setPen(pen)
 
         paint.drawLine(int(part * 2.5), 0, int(part * 2.5), new_size[1])

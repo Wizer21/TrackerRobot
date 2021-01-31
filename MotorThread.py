@@ -67,12 +67,10 @@ class MotorThread(QThread):
 
         speed = (125/100) * self.motor_speed
 
-        print("INIT " + str(self.rotation))
         rotated = (self.rotation / 100) * self.motor_speed
         if rotated < 0:
             rotated = -rotated
         rotated = 100 - rotated
-        print("ROTATED " + str(rotated))
 
         if self.motor_speed != 0:
             if self.is_forward:
@@ -102,7 +100,6 @@ class MotorThread(QThread):
 
         
         self.instructions = [[self.left_up, l_up], [self.left_down, l_dw], [self.right_up, r_up], [self.right_down, r_dw]] 
-        print(str(self.instructions))
 
 
     def run(self):       

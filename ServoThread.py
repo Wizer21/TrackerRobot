@@ -50,7 +50,6 @@ class ServoThread(QThread):
             return False
 
         if not self.run_servo:
-            print("in ")
             self.run_servo = True
             self.start() 
         return True
