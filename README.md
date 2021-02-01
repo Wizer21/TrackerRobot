@@ -1,6 +1,6 @@
 # TrackerRobot :robot:
 
-This project is realized on Rasberry Pi 4.  
+This project is realized on Raspberry Pi 4.  
 
 This robot is equipped with 2 DC motor that allow it to move around. Two servomotor control the camera which can in this way follow objects.
 Both DC and servosmotors can be controlled from the Qt interface or from an Xbox controller.
@@ -10,7 +10,7 @@ The item is tracked the same way of my repository [Image_Tracker](https://www.yo
 By looking at the center point of the tracked item, I can define if the camera should move and if so, in each direction.
 
 ## Components
-- Rasberry Pi 4B, 4GB
+- Raspberry Pi 4B, 4GB
 - Pi Camera V2
 - RPi Ryanteck motor controller 
 - 2 Servomotor SG90
