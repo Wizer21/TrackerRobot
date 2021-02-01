@@ -3,7 +3,7 @@
 This project is realized on Raspberry Pi 4.  
 
 This robot is equipped with 2 DC motor that allow it to move around. Two servomotor control the camera which can in this way follow objects.
-Both DC and servosmotors can be controlled from the Qt interface or from an Xbox controller.
+Both DC and servomotors can be controlled from the Qt interface or from an Xbox controller.
 
 The camera output is displayed on the interface, this way we can click on it to select an item and begin the tracking.
 The item is tracked the same way of my repository [Image_Tracker](https://www.youtube.com/watch?v=CWhhGOI1N1g).
